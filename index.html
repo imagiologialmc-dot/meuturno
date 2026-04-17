@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>MeuTurno</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2AA8A8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="MeuTurno">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background: #f0f4f7; color: #333; }
+    .hidden { display: none !important; }
+    #login-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; background: linear-gradient(135deg, #2AA8A8 0%, #2D6E8E 100%); }
+    #login-screen .logo { font-size: 64px; margin-bottom: 10px; }
+    #login-screen h1 { color: white; font-size: 28px; margin-bottom: 4px; }
+    #login-screen p { color: rgba(255,255,255,0.8); margin-bottom: 30px; font-size: 14px; }
+    .login-box { background: white; border-radius: 16px; padding: 28px 24px; width: 100%; max-width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+    .login-box input { width: 100%; padding: 13px 14px; margin: 7px 0; border-radius: 10px; border: 1.5px solid #ddd; font-size: 15px; outline: none; }
+    .login-box input:focus { border-color: #2AA8A8; }
+    .login-box button { width: 100%; padding: 14px; margin-top: 10px; background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
+    #login-error { color: #e74c3c; text-align: center; margin-top: 10px; font-size: 13px; min-height: 18px; }
+    #app-screen { max-width: 600px; margin: 0 auto; padding-bottom: 80px; }
+    .app-header { background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .app-header .title { font-size: 18px; font-weight: 700; }
+    .btn-logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; margin-left: 10px; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e0e0e0; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); z-index: 100; }
+    .nav-btn { flex: 1; padding: 8px 2px 6px; border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9px; color: #999; }
+    .nav-btn .icon { font-size: 22px; }
+    .nav-btn.active { color: #2AA8A8; }
+    .tab-content { padding: 16px; }
+    .section-title { font-size: 18px; font-weight: 700; color: #2D6E8E; margin-bottom: 14px; }
+    .aviso-card { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); border-left: 4px solid #2AA8A8; }
+    .aviso-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .aviso-autor { font-size: 12px; color: #2AA8A8; font-weight: 600; }
+    .aviso-data { font-size: 11px; color: #aaa; }
+    .aviso-texto { font-size: 14px; line-height: 1.5; }
+    .btn-apagar { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 16px; }
+    .btn-novo-aviso { width: 100%; padding: 13px; background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal-box { background: white; border-radius: 16px; padding: 24px; width: 100%; max-width: 400px; }
+    .modal-box h3 { margin-bottom: 14px; color: #2D6E8E; }
+    .modal-box textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1.5px solid #ddd; font-size: 14px; resize: vertical; min-height: 100px; outline: none; }
+    .modal-btns { display: flex; gap: 10px; margin-top: 14px; }
+    .modal-btns button { flex: 1; padding: 12px; border-radius: 10px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .btn-cancelar { background: #f0f0f0; color: #666; }
+    .btn-confirmar { background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; }
+    .horario-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+    .horario-tab { flex: 1; padding: 10px; border: 2px solid #2AA8A8; border-radius: 10px; background: white; color: #2AA8A8; font-weight: 600; font-size: 13px; cursor: pointer; text-align: center; }
+    .horario-tab.active { background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border-color: transparent; }
+    .iframe-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+    .iframe-container iframe { width: 100%; height: 500px; border: none; display: block; }
+    .empty-msg { padding: 40px; text-align: center; color: #aaa; font-size: 14px; }
+    .form-card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); margin-bottom: 16px; }
+    .form-card h3 { color: #2D6E8E; margin-bottom: 14px; font-size: 16px; }
+    .form-card input, .form-card textarea { width: 100%; padding: 12px 14px; margin: 6px 0; border-radius: 10px; border: 1.5px solid #ddd; font-size: 14px; outline: none; }
+    .form-card textarea { resize: vertical; min-height: 80px; }
+    .btn-enviar { width: 100%; padding: 14px; background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; }
+    .form-msg { text-align: center; margin-top: 10px; font-size: 13px; min-height: 18px; }
+    .pedido-card { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); }
+    .pedido-turnos { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+    .pedido-desc { font-size: 13px; color: #666; margin-bottom: 4px; }
+    .pedido-data { font-size: 11px; color: #bbb; margin-bottom: 6px; }
+    .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+    .status-pendente { background: #fff3cd; color: #856404; }
+    .status-aprovado { background: #d1e7dd; color: #0f5132; }
+    .status-reprovado { background: #f8d7da; color: #842029; }
+    .admin-badge { background: #fff3cd; color: #856404; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="logo" style="color:#FFD700;">&#9762;</div>
+  <h1>MeuTurno</h1>
+  <p>Imagiologia &middot; Aliva Sa&uacute;de</p>
+  <div class="login-box">
+    <input type="email" id="login-email" placeholder="Email institucional" autocomplete="email">
+    <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
+    <button id="btn-login">Entrar</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" class="hidden">
+  <div class="app-header">
+    <div><span style="font-size:20px;">&#9762;</span> <span class="title">MeuTurno</span></div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="font-size:12px;text-align:right;">
+        <span id="header-nome"></span><br>
+        <span id="header-admin" class="admin-badge hidden">ADMIN</span>
+      </div>
+      <button class="btn-logout" id="btn-logout">Sair</button>
+    </div>
+  </div>
+
+  <div id="tab-avisos" class="tab-content">
+    <div class="section-title">&#128226; Quadro de Avisos</div>
+    <button id="btn-novo-aviso" class="btn-novo-aviso hidden">+ Novo Aviso</button>
+    <div id="lista-avisos"><div class="empty-msg">A carregar avisos...</div></div>
+  </div>
+
+  <div id="tab-tecnicos" class="tab-content hidden">
+    <div class="section-title">&#128197; Hor&aacute;rio T&eacute;cnicos</div>
+    <div class="horario-tabs">
+      <button class="horario-tab active" id="tec-atual-btn">M&ecirc;s Atual</button>
+      <button class="horario-tab" id="tec-prox-btn">Pr&oacute;ximo M&ecirc;s</button>
+    </div>
+    <div class="iframe-container">
+      <div id="iframe-tecnicos-atual"><div class="empty-msg">A carregar...</div></div>
+      <div id="iframe-tecnicos-proximo" class="hidden"><div class="empty-msg">A carregar...</div></div>
+    </div>
+  </div>
+
+  <div id="tab-medicos" class="tab-content hidden">
+    <div class="section-title">&#129657; Hor&aacute;rio M&eacute;dicos</div>
+    <div class="horario-tabs">
+      <button class="horario-tab active" id="med-atual-btn">M&ecirc;s Atual</button>
+      <button class="horario-tab" id="med-prox-btn">Pr&oacute;ximo M&ecirc;s</button>
+    </div>
+    <div class="iframe-container">
+      <div id="iframe-medicos-atual"><div class="empty-msg">A carregar...</div></div>
+      <div id="iframe-medicos-proximo" class="hidden"><div class="empty-msg">A carregar...</div></div>
+    </div>
+  </div>
+
+  <div id="tab-oncall" class="tab-content hidden">
+    <div class="section-title">&#128680; Oncall Anestesia</div>
+    <div class="iframe-container">
+      <div id="iframe-oncall"><div class="empty-msg">A carregar...</div></div>
+    </div>
+  </div>
+
+  <div id="tab-telefones" class="tab-content hidden">
+    <div class="section-title">&#128222; Lista Telef&oacute;nica</div>
+    <div class="iframe-container">
+      <div id="iframe-telefones"><div class="empty-msg">A carregar...</div></div>
+    </div>
+  </div>
+
+  <div id="tab-pedidos" class="tab-content hidden">
+    <div class="section-title">&#128260; Pedido de Troca</div>
+    <div class="form-card">
+      <h3>Nova Solicita&ccedil;&atilde;o</h3>
+      <input type="text" id="p-meu-turno" placeholder="O meu turno (ex: 20 Abr, tarde)">
+      <input type="text" id="p-turno-pretendido" placeholder="Turno pretendido (ex: 22 Abr, manha)">
+      <input type="text" id="p-colega" placeholder="Colega para trocar (nome)">
+      <textarea id="p-descricao" placeholder="Motivo / descri&ccedil;&atilde;o..."></textarea>
+      <button class="btn-enviar" id="btn-enviar-pedido">Enviar Pedido</button>
+      <div id="pedido-msg" class="form-msg"></div>
+    </div>
+    <div class="section-title">&#128203; Os Meus Pedidos</div>
+    <div id="lista-pedidos"><div class="empty-msg">Sem pedidos ainda.</div></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="avisos"><span class="icon">&#128226;</span>Avisos</button>
+    <button class="nav-btn" data-tab="tecnicos"><span class="icon">&#128197;</span>Tecnicos</button>
+    <button class="nav-btn" data-tab="medicos"><span class="icon">&#129657;</span>Medicos</button>
+    <button class="nav-btn" data-tab="oncall"><span class="icon">&#128680;</span>Oncall</button>
+    <button class="nav-btn" data-tab="telefones"><span class="icon">&#128222;</span>Contactos</button>
+    <button class="nav-btn" data-tab="pedidos"><span class="icon">&#128260;</span>Pedidos</button>
+  </nav>
+</div>
+
+<!-- MODAL AVISO -->
+<div id="modal-aviso" class="modal-overlay hidden">
+  <div class="modal-box">
+    <h3>Novo Aviso</h3>
+    <textarea id="novo-aviso-texto" placeholder="Escreve o aviso para a equipa..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-cancelar" id="btn-cancelar-aviso">Cancelar</button>
+      <button class="btn-confirmar" id="btn-publicar-aviso">Publicar</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, deleteDoc, doc, query, where,
+    orderBy, onSnapshot, serverTimestamp, getDoc }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDnQ5fQFmx1-48lJwcaJhSKq2Y8MAaNAcY",
+    authDomain: "meuturno-d7d1a.firebaseapp.com",
+    projectId: "meuturno-d7d1a",
+    storageBucket: "meuturno-d7d1a.firebasestorage.app",
+    messagingSenderId: "634840990788",
+    appId: "1:634840990788:web:3b7b0e8d1d051959d86811"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  emailjs.init("POYtv2l_dgsbXbtFF");
+
+  const ADMINS = ["carlos.martins@aliva.saude.com", "ana.baiao@alivasaude.com"];
+  let currentUser = null;
+  let isAdmin = false;
+
+  const LINK_TEC_ATUAL = "https://1drv.ms/x/c/1d9468c5d2034599/IQRaVwD0iohaQaWpsCiaulHKAQLRMne6GxiZEKbFEyKJPkA?em=2&wdAllowInteractivity=False&Item='Horario'!A1%3AAN123&wdHideGridlines=True&wdDownloadButton=True&wdInConfigurator=True&wdInConfigurator=True";
+  const LINK_MED_ATUAL = "https://1drv.ms/x/c/1d9468c5d2034599/IQRwK9XfGmC0QJRLive601GvATKZ4wuzRK0VTjOE3E0_Ofg?em=2&wdAllowInteractivity=False&Item='Horario'!A1%3AAI79&wdHideGridlines=True&wdDownloadButton=True&wdInConfigurator=True&wdInConfigurator=True";
+  const LINK_ONCALL = "https://1drv.ms/x/c/1d9468c5d2034599/IQT760WJoN73QJqaNNAugPtsAYH2gag9GD-RFqa3EqbhA3Q?em=2&wdAllowInteractivity=False&Item=Folha1!A1%3AN27&wdHideGridlines=True&wdInConfigurator=True";
+  const LINK_TEL = "https://1drv.ms/x/c/1d9468c5d2034599/IQS5vGGVrIMxSIj9aFDu0Gp0AV823UsZymbVO5frZwdui5c?em=2&wdAllowInteractivity=False&Item=Folha1!A1%3AF63&wdHideGridlines=True&wdDownloadButton=True&wdInConfigurator=True";
+
+  function setIframe(id, src) {
+    const el = document.getElementById(id);
+    if (!src) { el.innerHTML = '<div class="empty-msg">Sem horario disponivel.</div>'; return; }
+    const f = document.createElement("iframe");
+    f.src = src; f.title = "Horario";
+    f.style.cssText = "width:100%;height:500px;border:none;display:block;";
+    el.innerHTML = ""; el.appendChild(f);
+  }
+
+  async function carregarLinks() {
+    try {
+      const snap = await getDoc(doc(db, "Config", "links"));
+      const d = snap.exists() ? snap.data() : {};
+      setIframe("iframe-tecnicos-atual", d.horario_tecnicos_atual || LINK_TEC_ATUAL);
+      setIframe("iframe-tecnicos-proximo", d.horario_tecnicos_proximo || "");
+      setIframe("iframe-medicos-atual", d.horario_medicos_atual || LINK_MED_ATUAL);
+      setIframe("iframe-medicos-proximo", d.horario_medicos_proximo || "");
+    } catch(e) {
+      setIframe("iframe-tecnicos-atual", LINK_TEC_ATUAL);
+      setIframe("iframe-medicos-atual", LINK_MED_ATUAL);
+    }
+    setIframe("iframe-oncall", LINK_ONCALL);
+    setIframe("iframe-telefones", LINK_TEL);
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      isAdmin = ADMINS.includes(user.email);
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("app-screen").classList.remove("hidden");
+      document.getElementById("header-nome").textContent = user.displayName || user.email.split("@")[0];
+      if (isAdmin) {
+        document.getElementById("header-admin").classList.remove("hidden");
+        document.getElementById("btn-novo-aviso").classList.remove("hidden");
+      }
+      await carregarLinks();
+      carregarAvisos();
+      carregarPedidos();
+    } else {
+      currentUser = null;
+      document.getElementById("login-screen").classList.remove("hidden");
+      document.getElementById("app-screen").classList.add("hidden");
+    }
+  });
+
+  document.getElementById("btn-login").addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value.trim();
+    const pass = document.getElementById("login-pass").value;
+    const err = document.getElementById("login-error");
+    err.textContent = "";
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      err.textContent = "Email ou password incorretos.";
+    }
+  });
+
+  document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
+
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-content").forEach(t => t.classList.add("hidden"));
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
+      btn.classList.add("active");
+    });
+  });
+
+  document.getElementById("tec-atual-btn").addEventListener("click", function() {
+    this.classList.add("active"); document.getElementById("tec-prox-btn").classList.remove("active");
+    document.getElementById("iframe-tecnicos-atual").classList.remove("hidden");
+    document.getElementById("iframe-tecnicos-proximo").classList.add("hidden");
+  });
+  document.getElementById("tec-prox-btn").addEventListener("click", function() {
+    this.classList.add("active"); document.getElementById("tec-atual-btn").classList.remove("active");
+    document.getElementById("iframe-tecnicos-proximo").classList.remove("hidden");
+    document.getElementById("iframe-tecnicos-atual").classList.add("hidden");
+  });
+  document.getElementById("med-atual-btn").addEventListener("click", function() {
+    this.classList.add("active"); document.getElementById("med-prox-btn").classList.remove("active");
+    document.getElementById("iframe-medicos-atual").classList.remove("hidden");
+    document.getElementById("iframe-medicos-proximo").classList.add("hidden");
+  });
+  document.getElementById("med-prox-btn").addEventListener("click", function() {
+    this.classList.add("active"); document.getElementById("med-atual-btn").classList.remove("active");
+    document.getElementById("iframe-medicos-proximo").classList.remove("hidden");
+    document.getElementById("iframe-medicos-atual").classList.add("hidden");
+  });
+
+  function carregarAvisos() {
+    const q = query(collection(db, "Avisos"), orderBy("createdAt", "desc"));
+    onSnapshot(q, (snap) => {
+      const lista = document.getElementById("lista-avisos");
+      if (snap.empty) { lista.innerHTML = '<div class="empty-msg">Sem avisos de momento.</div>'; return; }
+      lista.innerHTML = "";
+      snap.forEach(d => {
+        const a = d.data();
+        const data = a.createdAt ? new Date(a.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "";
+        const div = document.createElement("div");
+        div.className = "aviso-card";
+        div.innerHTML = `<div class="aviso-header"><span class="aviso-autor">&#128100; ${a.autor||"Admin"}</span><div style="display:flex;align-items:center;gap:6px;"><span class="aviso-data">${data}</span>${isAdmin ? `<button class="btn-apagar" data-id="${d.id}">&#128465;</button>` : ""}</div></div><div class="aviso-texto">${a.texto}</div>`;
+        lista.appendChild(div);
+      });
+      if (isAdmin) {
+        lista.querySelectorAll(".btn-apagar").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            if (confirm("Apagar este aviso?")) await deleteDoc(doc(db, "Avisos", btn.dataset.id));
+          });
+        });
+      }
+    });
+  }
+
+  document.getElementById("btn-novo-aviso").addEventListener("click", () => document.getElementById("modal-aviso").classList.remove("hidden"));
+  document.getElementById("btn-cancelar-aviso").addEventListener("click", () => {
+    document.getElementById("modal-aviso").classList.add("hidden");
+    document.getElementById("novo-aviso-texto").value = "";
+  });
+  document.getElementById("btn-publicar-aviso").addEventListener("click", async () => {
+    const texto = document.getElementById("novo-aviso-texto").value.trim();
+    if (!texto) return;
+    await addDoc(collection(db, "Avisos"), {
+      texto, autor: currentUser.displayName || currentUser.email.split("@")[0],
+      createdAt: serverTimestamp()
+    });
+    document.getElementById("modal-aviso").classList.add("hidden");
+    document.getElementById("novo-aviso-texto").value = "";
+  });
+
+  document.getElementById("btn-enviar-pedido").addEventListener("click", async () => {
+    const meuTurno = document.getElementById("p-meu-turno").value.trim();
+    const turnoPretendido = document.getElementById("p-turno-pretendido").value.trim();
+    const colega = document.getElementById("p-colega").value.trim();
+    const descricao = document.getElementById("p-descricao").value.trim();
+    const msg = document.getElementById("pedido-msg");
+    if (!meuTurno || !turnoPretendido) { msg.style.color="red"; msg.textContent="Preenche os turnos."; return; }
+    try {
+      const docRef = await addDoc(collection(db, "Pedidos"), {
+        uid: currentUser.uid, email: currentUser.email,
+        nome: currentUser.displayName || currentUser.email.split("@")[0],
+        meuTurno, turnoPretendido, colega, descricao,
+        status: "pendente", createdAt: serverTimestamp()
+      });
+      await emailjs.send("service_ypyd6nc", "template_r12r1qi", {
+        from_name: currentUser.displayName || currentUser.email.split("@")[0],
+        from_email: currentUser.email, meu_turno: meuTurno,
+        turno_pretendido: turnoPretendido, colega: colega||"Nao especificado",
+        descricao: descricao||"Sem descricao", pedido_id: docRef.id
+      });
+      msg.style.color="green"; msg.textContent="Pedido enviado com sucesso!";
+      ["p-meu-turno","p-turno-pretendido","p-colega","p-descricao"].forEach(id => document.getElementById(id).value="");
+    } catch(e) { msg.style.color="red"; msg.textContent="Erro: "+e.message; }
+  });
+
+  function carregarPedidos() {
+    const q = query(collection(db, "Pedidos"), where("uid","==",currentUser.uid), orderBy("createdAt","desc"));
+    onSnapshot(q, (snap) => {
+      const lista = document.getElementById("lista-pedidos");
+      if (snap.empty) { lista.innerHTML='<div class="empty-msg">Sem pedidos ainda.</div>'; return; }
+      lista.innerHTML = "";
+      snap.forEach(d => {
+        const p = d.data();
+        const data = p.createdAt ? new Date(p.createdAt.seconds*1000).toLocaleDateString("pt-PT") : "";
+        const sc = p.status==="aprovado"?"aprovado":p.status==="reprovado"?"reprovado":"pendente";
+        const emoji = p.status==="aprovado"?"&#9989;":p.status==="reprovado"?"&#10060;":"&#9203;";
+        const div = document.createElement("div");
+        div.className = "pedido-card";
+        div.innerHTML = `<div class="pedido-turnos">&#128260; ${p.meuTurno} &rarr; ${p.turnoPretendido}</div>${p.colega?`<div class="pedido-desc">&#128101; ${p.colega}</div>`:""}${p.descricao?`<div class="pedido-desc">${p.descricao}</div>`:""}<div class="pedido-data">&#128197; ${data}</div><span class="status-badge status-${sc}">${emoji} ${p.status.toUpperCase()}</span>`;
+        lista.appendChild(div);
+      });
+    });
+  }
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/meuturno/service-worker.js");
+  }
+</script>
+</body>
+</html>
