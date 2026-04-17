@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+html = '''<!DOCTYPE html>
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
@@ -208,14 +208,14 @@
   let currentUser = null;
   let isAdmin = false;
 
-  const LINK_TEC_ATUAL = "https://1drv.ms/x/c/1d9468c5d2034599/IQRaVwD0iohaQaWpsCiaulHKAQLRMne6GxiZEKbFEyKJPkA?em=2&wdAllowInteractivity=False&Item='Horario'!A1%3AAN123&wdHideGridlines=True&wdDownloadButton=True&wdInConfigurator=True&wdInConfigurator=True";
-  const LINK_MED_ATUAL = "https://1drv.ms/x/c/1d9468c5d2034599/IQRwK9XfGmC0QJRLive601GvATKZ4wuzRK0VTjOE3E0_Ofg?em=2&wdAllowInteractivity=False&Item='Horario'!A1%3AAI79&wdHideGridlines=True&wdDownloadButton=True&wdInConfigurator=True&wdInConfigurator=True";
+  const LINK_TEC_ATUAL = "https://1drv.ms/x/c/1d9468c5d2034599/IQRaVwD0iohaQaWpsCiaulHKAQLRMne6GxiZEKbFEyKJPkA?em=2&wdAllowInteractivity=False&Item=\'Horario\'!A1%3AAN123&wdHideGridlines=True&wdDownloadButton=True&wdInConfigurator=True&wdInConfigurator=True";
+  const LINK_MED_ATUAL = "https://1drv.ms/x/c/1d9468c5d2034599/IQRwK9XfGmC0QJRLive601GvATKZ4wuzRK0VTjOE3E0_Ofg?em=2&wdAllowInteractivity=False&Item=\'Horario\'!A1%3AAI79&wdHideGridlines=True&wdDownloadButton=True&wdInConfigurator=True&wdInConfigurator=True";
   const LINK_ONCALL = "https://1drv.ms/x/c/1d9468c5d2034599/IQT760WJoN73QJqaNNAugPtsAYH2gag9GD-RFqa3EqbhA3Q?em=2&wdAllowInteractivity=False&Item=Folha1!A1%3AN27&wdHideGridlines=True&wdInConfigurator=True";
   const LINK_TEL = "https://1drv.ms/x/c/1d9468c5d2034599/IQS5vGGVrIMxSIj9aFDu0Gp0AV823UsZymbVO5frZwdui5c?em=2&wdAllowInteractivity=False&Item=Folha1!A1%3AF63&wdHideGridlines=True&wdDownloadButton=True&wdInConfigurator=True";
 
   function setIframe(id, src) {
     const el = document.getElementById(id);
-    if (!src) { el.innerHTML = '<div class="empty-msg">Sem horario disponivel.</div>'; return; }
+    if (!src) { el.innerHTML = \'<div class="empty-msg">Sem horario disponivel.</div>\'; return; }
     const f = document.createElement("iframe");
     f.src = src; f.title = "Horario";
     f.style.cssText = "width:100%;height:500px;border:none;display:block;";
@@ -307,7 +307,7 @@
     const q = query(collection(db, "Avisos"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snap) => {
       const lista = document.getElementById("lista-avisos");
-      if (snap.empty) { lista.innerHTML = '<div class="empty-msg">Sem avisos de momento.</div>'; return; }
+      if (snap.empty) { lista.innerHTML = \'<div class="empty-msg">Sem avisos de momento.</div>\'; return; }
       lista.innerHTML = "";
       snap.forEach(d => {
         const a = d.data();
@@ -372,7 +372,7 @@
     const q = query(collection(db, "Pedidos"), where("uid","==",currentUser.uid), orderBy("createdAt","desc"));
     onSnapshot(q, (snap) => {
       const lista = document.getElementById("lista-pedidos");
-      if (snap.empty) { lista.innerHTML='<div class="empty-msg">Sem pedidos ainda.</div>'; return; }
+      if (snap.empty) { lista.innerHTML=\'<div class="empty-msg">Sem pedidos ainda.</div>\'; return; }
       lista.innerHTML = "";
       snap.forEach(d => {
         const p = d.data();
@@ -394,4 +394,10 @@
   }
 </script>
 </body>
-</html>
+</html>'''
+
+import os
+os.makedirs("output", exist_ok=True)
+with open("output/index.html", "w", encoding="utf-8") as f:
+    f.write(html)
+print("Gerado:", len(html), "chars")
