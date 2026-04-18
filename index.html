@@ -27,8 +27,8 @@
     .app-header { background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     .app-header .title { font-size: 18px; font-weight: 700; }
     .btn-logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; margin-left: 10px; }
-    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e0e0e0; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); z-index: 100; }
-    .nav-btn { flex: 1; padding: 8px 2px 6px; border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9px; color: #999; }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e0e0e0; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); z-index: 100; overflow-x: auto; }
+    .nav-btn { flex: 1; min-width: 50px; padding: 8px 2px 6px; border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9px; color: #999; }
     .nav-btn .icon { font-size: 22px; }
     .nav-btn.active { color: #2AA8A8; }
     .tab-content { padding: 12px; }
@@ -61,7 +61,7 @@
     .empty-msg { padding: 40px; text-align: center; color: #aaa; font-size: 14px; }
     .form-card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); margin-bottom: 16px; }
     .form-card h3 { color: #2D6E8E; margin-bottom: 14px; font-size: 16px; }
-    .form-card input, .form-card textarea { width: 100%; padding: 12px 14px; margin: 6px 0; border-radius: 10px; border: 1.5px solid #ddd; font-size: 14px; outline: none; background: white; }
+    .form-card input, .form-card select, .form-card textarea { width: 100%; padding: 12px 14px; margin: 6px 0; border-radius: 10px; border: 1.5px solid #ddd; font-size: 14px; outline: none; background: white; }
     .form-card textarea { resize: vertical; min-height: 80px; }
     .form-label { font-size: 13px; color: #2D6E8E; font-weight: 600; margin-top: 10px; display: block; }
     .btn-enviar { width: 100%; padding: 14px; background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; }
@@ -75,6 +75,15 @@
     .status-aprovado { background: #d1e7dd; color: #0f5132; }
     .status-reprovado { background: #f8d7da; color: #842029; }
     .admin-badge { background: #fff3cd; color: #856404; font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+    .gestao-card { background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); border-left: 4px solid #f39c12; }
+    .gestao-nome { font-weight: 700; font-size: 14px; color: #2D6E8E; margin-bottom: 4px; }
+    .gestao-turnos { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .gestao-btns { display: flex; gap: 8px; margin-top: 10px; }
+    .btn-aprovar { flex: 1; padding: 10px; background: #d1e7dd; color: #0f5132; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .btn-reprovar { flex: 1; padding: 10px; background: #f8d7da; color: #842029; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; }
+    .filtro-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .filtro-btn { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #2AA8A8; background: white; color: #2AA8A8; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .filtro-btn.active { background: #2AA8A8; color: white; }
   </style>
 </head>
 <body>
@@ -161,7 +170,9 @@
       <input type="text" id="p-turno-pretendido-periodo" placeholder="Ex: Manh&atilde;, Tarde, 8h-16h...">
 
       <label class="form-label">&#128101; Colega para trocar</label>
-      <input type="text" id="p-colega" placeholder="Nome do colega">
+      <select id="p-colega-select">
+        <option value="">-- Seleciona colega --</option>
+      </select>
 
       <label class="form-label">&#128172; Motivo</label>
       <textarea id="p-descricao" placeholder="Descri&ccedil;&atilde;o opcional..."></textarea>
@@ -173,6 +184,16 @@
     <div id="lista-pedidos"><div class="empty-msg">Sem pedidos ainda.</div></div>
   </div>
 
+  <div id="tab-gestao" class="tab-content hidden">
+    <div class="section-title">&#9881;&#65039; Gest&atilde;o de Trocas</div>
+    <div class="filtro-tabs">
+      <button class="filtro-btn active" data-filtro="pendente">&#9203; Pendentes</button>
+      <button class="filtro-btn" data-filtro="aprovado">&#9989; Aprovados</button>
+      <button class="filtro-btn" data-filtro="reprovado">&#10060; Reprovados</button>
+    </div>
+    <div id="lista-gestao"><div class="empty-msg">Sem pedidos pendentes.</div></div>
+  </div>
+
   <nav class="bottom-nav">
     <button class="nav-btn active" data-tab="avisos"><span class="icon">&#128226;</span>Avisos</button>
     <button class="nav-btn" data-tab="tecnicos"><span class="icon">&#128197;</span>Tecnicos</button>
@@ -180,6 +201,7 @@
     <button class="nav-btn" data-tab="oncall"><span class="icon">&#128680;</span>Oncall</button>
     <button class="nav-btn" data-tab="telefones"><span class="icon">&#128222;</span>Contactos</button>
     <button class="nav-btn" data-tab="pedidos"><span class="icon">&#128260;</span>Pedidos</button>
+    <button class="nav-btn hidden" id="nav-gestao" data-tab="gestao"><span class="icon">&#9881;&#65039;</span>Gest&atilde;o</button>
   </nav>
 </div>
 
@@ -210,7 +232,7 @@
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, collection, addDoc, deleteDoc, doc, query, where,
-    orderBy, onSnapshot, serverTimestamp, getDoc }
+    orderBy, onSnapshot, serverTimestamp, getDoc, getDocs, updateDoc }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -229,6 +251,8 @@
   const ADMINS = ["carlos.martins@alivasaude.com", "ana.baiao@alivasaude.com"];
   let currentUser = null;
   let isAdmin = false;
+  let currentRole = null;
+  let filtroAtivo = "pendente";
 
   const LINK_TEC_ATUAL = "https://1drv.ms/x/c/1d9468c5d2034599/IQRaVwD0iohaQaWpsCiaulHKAQLRMne6GxiZEKbFEyKJPkA?em=2&wdAllowInteractivity=False&Item='Horario'!A1%3AAN123&wdHideGridlines=True&wdDownloadButton=True&wdInConfigurator=True";
   const LINK_MED_ATUAL = "https://1drv.ms/x/c/1d9468c5d2034599/IQRwK9XfGmC0QJRLive601GvATKZ4wuzRK0VTjOE3E0_Ofg?em=2&wdAllowInteractivity=False&Item='Horario'!A1%3AAI79&wdHideGridlines=True&wdDownloadButton=True&wdInConfigurator=True";
@@ -261,18 +285,46 @@
     setIframe("iframe-telefones", LINK_TEL);
   }
 
+  async function carregarColegas() {
+    const select = document.getElementById("p-colega-select");
+    select.innerHTML = '<option value="">-- Seleciona colega --</option>';
+    if (!currentRole) return;
+    const snap = await getDocs(query(collection(db, "Utilizadores"), where("role", "==", currentRole)));
+    snap.forEach(d => {
+      const u = d.data();
+      if (d.id === currentUser.uid) return; // não mostra o próprio
+      const opt = document.createElement("option");
+      opt.value = u.email;
+      opt.dataset.nome = u.nome;
+      opt.textContent = u.nome;
+      select.appendChild(opt);
+    });
+  }
+
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
       isAdmin = ADMINS.includes(user.email);
+
+      // Carrega perfil do Firestore
+      try {
+        const perfilSnap = await getDoc(doc(db, "Utilizadores", user.uid));
+        if (perfilSnap.exists()) currentRole = perfilSnap.data().role;
+      } catch(e) {}
+
       document.getElementById("login-screen").classList.add("hidden");
       document.getElementById("app-screen").classList.remove("hidden");
       document.getElementById("header-nome").textContent = user.displayName || user.email.split("@")[0];
+
       if (isAdmin) {
         document.getElementById("header-admin").classList.remove("hidden");
         document.getElementById("btn-novo-aviso").classList.remove("hidden");
+        document.getElementById("nav-gestao").classList.remove("hidden");
+        carregarGestao();
       }
+
       await carregarLinks();
+      await carregarColegas();
       carregarAvisos();
       carregarPedidos();
     } else {
@@ -327,6 +379,16 @@
     document.getElementById("iframe-medicos-atual").classList.add("hidden");
   });
 
+  // Filtros gestão
+  document.querySelectorAll(".filtro-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".filtro-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      filtroAtivo = btn.dataset.filtro;
+      carregarGestao();
+    });
+  });
+
   function carregarAvisos() {
     const q = query(collection(db, "Avisos"), orderBy("createdAt", "desc"));
     onSnapshot(q, (snap) => {
@@ -377,56 +439,130 @@
     const meuPeriodo = document.getElementById("p-meu-turno-periodo").value.trim();
     const pretData = document.getElementById("p-turno-pretendido-data").value;
     const pretPeriodo = document.getElementById("p-turno-pretendido-periodo").value.trim();
-    const colega = document.getElementById("p-colega").value.trim();
+    const coleagaSelect = document.getElementById("p-colega-select");
+    const colega_email = coleagaSelect.value;
+    const colega_nome = coleagaSelect.options[coleagaSelect.selectedIndex]?.dataset.nome || "";
     const descricao = document.getElementById("p-descricao").value.trim();
     const msg = document.getElementById("pedido-msg");
 
     if (!meuData || !meuPeriodo || !pretData || !pretPeriodo) {
       msg.style.color = "red"; msg.textContent = "Preenche a data e turno dos dois campos."; return;
     }
+    if (!colega_email) {
+      msg.style.color = "red"; msg.textContent = "Seleciona um colega."; return;
+    }
 
     const meuTurno = formato(meuData, meuPeriodo);
     const turnoPretendido = formato(pretData, pretPeriodo);
+    const nomeAutor = currentUser.displayName || currentUser.email.split("@")[0];
 
     msg.style.color = "#666"; msg.textContent = "A enviar...";
     loadEmailJS(async (err) => {
       if (err) { msg.style.color = "red"; msg.textContent = "Erro ao carregar EmailJS."; return; }
       try {
         const docRef = await addDoc(collection(db, "Pedidos"), {
-          uid: currentUser.uid, email: currentUser.email,
-          nome: currentUser.displayName || currentUser.email.split("@")[0],
-          meuTurno, turnoPretendido, colega, descricao,
-          status: "pendente", createdAt: serverTimestamp()
+          uid: currentUser.uid,
+          email: currentUser.email,
+          nome: nomeAutor,
+          colega_email,
+          colega_nome,
+          meuTurno, turnoPretendido, descricao,
+          status: "pendente",
+          createdAt: serverTimestamp()
         });
         await emailjs.send("service_ypyd6nc", "template_r12r1qi", {
-          from_name: currentUser.displayName || currentUser.email.split("@")[0],
-          from_email: currentUser.email, meu_turno: meuTurno,
-          turno_pretendido: turnoPretendido, colega: colega || "Nao especificado",
-          descricao: descricao || "Sem descricao", pedido_id: docRef.id
+          from_name: nomeAutor,
+          from_email: currentUser.email,
+          meu_turno: meuTurno,
+          turno_pretendido: turnoPretendido,
+          colega: colega_nome || "Nao especificado",
+          descricao: descricao || "Sem descricao",
+          pedido_id: docRef.id
         });
         msg.style.color = "green"; msg.textContent = "Pedido enviado com sucesso!";
-        ["p-meu-turno-data","p-meu-turno-periodo","p-turno-pretendido-data","p-turno-pretendido-periodo","p-colega","p-descricao"]
+        ["p-meu-turno-data","p-meu-turno-periodo","p-turno-pretendido-data","p-turno-pretendido-periodo","p-descricao"]
           .forEach(id => { document.getElementById(id).value = ""; });
+        document.getElementById("p-colega-select").selectedIndex = 0;
       } catch(e) { msg.style.color = "red"; msg.textContent = "Erro: " + e.message; }
     });
   });
 
   function carregarPedidos() {
-    const q = query(collection(db, "Pedidos"), where("uid","==",currentUser.uid), orderBy("createdAt","desc"));
-    onSnapshot(q, (snap) => {
-      const lista = document.getElementById("lista-pedidos");
-      if (snap.empty) { lista.innerHTML = '<div class="empty-msg">Sem pedidos ainda.</div>'; return; }
+    const lista = document.getElementById("lista-pedidos");
+    const pedidos = new Map();
+
+    const renderPedidos = () => {
+      if (pedidos.size === 0) { lista.innerHTML = '<div class="empty-msg">Sem pedidos ainda.</div>'; return; }
+      lista.innerHTML = "";
+      [...pedidos.values()].sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).forEach(p => {
+        const data = p.createdAt ? new Date(p.createdAt.seconds*1000).toLocaleDateString("pt-PT") : "";
+        const sc = p.status==="aprovado"?"aprovado":p.status==="reprovado"?"reprovado":"pendente";
+        const emoji = p.status==="aprovado"?"&#9989;":p.status==="reprovado"?"&#10060;":"&#9203;";
+        const souAutor = p.uid === currentUser.uid;
+        const div = document.createElement("div");
+        div.className = "pedido-card";
+        div.innerHTML = `
+          <div class="pedido-turnos">&#128260; ${p.meuTurno} &rarr; ${p.turnoPretendido}</div>
+          <div class="pedido-desc">&#128100; ${souAutor ? "Colega: " + (p.colega_nome||p.colega_email) : "Pedido de: " + p.nome}</div>
+          ${p.descricao?`<div class="pedido-desc">${p.descricao}</div>`:""}
+          <div class="pedido-data">&#128197; ${data}</div>
+          <span class="status-badge status-${sc}">${emoji} ${p.status.toUpperCase()}</span>`;
+        lista.appendChild(div);
+      });
+    };
+
+    // Query 1 — pedidos que eu criei
+    const q1 = query(collection(db, "Pedidos"), where("uid","==",currentUser.uid), orderBy("createdAt","desc"));
+    onSnapshot(q1, snap => {
+      snap.forEach(d => pedidos.set(d.id, {...d.data(), _id: d.id}));
+      snap.docChanges().forEach(change => { if (change.type === "removed") pedidos.delete(change.doc.id); });
+      renderPedidos();
+    });
+
+    // Query 2 — pedidos onde sou o colega visado
+    const q2 = query(collection(db, "Pedidos"), where("colega_email","==",currentUser.email), orderBy("createdAt","desc"));
+    onSnapshot(q2, snap => {
+      snap.forEach(d => pedidos.set(d.id, {...d.data(), _id: d.id}));
+      snap.docChanges().forEach(change => { if (change.type === "removed") pedidos.delete(change.doc.id); });
+      renderPedidos();
+    });
+  }
+
+  function carregarGestao() {
+    const lista = document.getElementById("lista-gestao");
+    const q = query(collection(db, "Pedidos"), where("status","==", filtroAtivo), orderBy("createdAt","desc"));
+    onSnapshot(q, snap => {
+      if (snap.empty) { lista.innerHTML = `<div class="empty-msg">Sem pedidos ${filtroAtivo}s.</div>`; return; }
       lista.innerHTML = "";
       snap.forEach(d => {
         const p = d.data();
         const data = p.createdAt ? new Date(p.createdAt.seconds*1000).toLocaleDateString("pt-PT") : "";
-        const sc = p.status==="aprovado"?"aprovado":p.status==="reprovado"?"reprovado":"pendente";
-        const emoji = p.status==="aprovado"?"&#9989;":p.status==="reprovado"?"&#10060;":"&#9203;";
         const div = document.createElement("div");
-        div.className = "pedido-card";
-        div.innerHTML = `<div class="pedido-turnos">&#128260; ${p.meuTurno} &rarr; ${p.turnoPretendido}</div>${p.colega?`<div class="pedido-desc">&#128101; ${p.colega}</div>`:""}${p.descricao?`<div class="pedido-desc">${p.descricao}</div>`:""}<div class="pedido-data">&#128197; ${data}</div><span class="status-badge status-${sc}">${emoji} ${p.status.toUpperCase()}</span>`;
+        div.className = "gestao-card";
+        div.innerHTML = `
+          <div class="gestao-nome">&#128100; ${p.nome} &rarr; ${p.colega_nome||p.colega_email||"?"}</div>
+          <div class="gestao-turnos">&#128260; ${p.meuTurno} &harr; ${p.turnoPretendido}</div>
+          ${p.descricao?`<div class="pedido-desc">&#128172; ${p.descricao}</div>`:""}
+          <div class="pedido-data">&#128197; ${data}</div>
+          ${filtroAtivo === "pendente" ? `
+          <div class="gestao-btns">
+            <button class="btn-aprovar" data-id="${d.id}">&#9989; Aprovar</button>
+            <button class="btn-reprovar" data-id="${d.id}">&#10060; Reprovar</button>
+          </div>` : `<span class="status-badge status-${filtroAtivo}">${p.status.toUpperCase()}</span>`}`;
         lista.appendChild(div);
       });
+      if (filtroAtivo === "pendente") {
+        lista.querySelectorAll(".btn-aprovar").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            await updateDoc(doc(db, "Pedidos", btn.dataset.id), { status: "aprovado" });
+          });
+        });
+        lista.querySelectorAll(".btn-reprovar").forEach(btn => {
+          btn.addEventListener("click", async () => {
+            await updateDoc(doc(db, "Pedidos", btn.dataset.id), { status: "reprovado" });
+          });
+        });
+      }
     });
   }
 </script>
