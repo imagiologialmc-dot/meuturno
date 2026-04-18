@@ -61,7 +61,7 @@
     .empty-msg { padding: 40px; text-align: center; color: #aaa; font-size: 14px; }
     .form-card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); margin-bottom: 16px; }
     .form-card h3 { color: #2D6E8E; margin-bottom: 14px; font-size: 16px; }
-    .form-card input, .form-card select, .form-card textarea { width: 100%; padding: 12px 14px; margin: 6px 0; border-radius: 10px; border: 1.5px solid #ddd; font-size: 14px; outline: none; background: white; }
+    .form-card input, .form-card textarea { width: 100%; padding: 12px 14px; margin: 6px 0; border-radius: 10px; border: 1.5px solid #ddd; font-size: 14px; outline: none; background: white; }
     .form-card textarea { resize: vertical; min-height: 80px; }
     .form-label { font-size: 13px; color: #2D6E8E; font-weight: 600; margin-top: 10px; display: block; }
     .btn-enviar { width: 100%; padding: 14px; background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 10px; }
@@ -154,21 +154,11 @@
 
       <label class="form-label">&#128197; O meu turno</label>
       <input type="date" id="p-meu-turno-data">
-      <select id="p-meu-turno-periodo">
-        <option value="">-- Per&iacute;odo --</option>
-        <option value="Manhã">Manh&atilde;</option>
-        <option value="Tarde">Tarde</option>
-        <option value="Noite">Noite</option>
-      </select>
+      <input type="text" id="p-meu-turno-periodo" placeholder="Ex: Manh&atilde;, Tarde, 8h-16h...">
 
       <label class="form-label">&#128260; Turno pretendido</label>
       <input type="date" id="p-turno-pretendido-data">
-      <select id="p-turno-pretendido-periodo">
-        <option value="">-- Per&iacute;odo --</option>
-        <option value="Manhã">Manh&atilde;</option>
-        <option value="Tarde">Tarde</option>
-        <option value="Noite">Noite</option>
-      </select>
+      <input type="text" id="p-turno-pretendido-periodo" placeholder="Ex: Manh&atilde;, Tarde, 8h-16h...">
 
       <label class="form-label">&#128101; Colega para trocar</label>
       <input type="text" id="p-colega" placeholder="Nome do colega">
@@ -384,15 +374,15 @@
 
   document.getElementById("btn-enviar-pedido").addEventListener("click", async () => {
     const meuData = document.getElementById("p-meu-turno-data").value;
-    const meuPeriodo = document.getElementById("p-meu-turno-periodo").value;
+    const meuPeriodo = document.getElementById("p-meu-turno-periodo").value.trim();
     const pretData = document.getElementById("p-turno-pretendido-data").value;
-    const pretPeriodo = document.getElementById("p-turno-pretendido-periodo").value;
+    const pretPeriodo = document.getElementById("p-turno-pretendido-periodo").value.trim();
     const colega = document.getElementById("p-colega").value.trim();
     const descricao = document.getElementById("p-descricao").value.trim();
     const msg = document.getElementById("pedido-msg");
 
     if (!meuData || !meuPeriodo || !pretData || !pretPeriodo) {
-      msg.style.color = "red"; msg.textContent = "Preenche a data e período dos dois turnos."; return;
+      msg.style.color = "red"; msg.textContent = "Preenche a data e turno dos dois campos."; return;
     }
 
     const meuTurno = formato(meuData, meuPeriodo);
@@ -416,7 +406,7 @@
         });
         msg.style.color = "green"; msg.textContent = "Pedido enviado com sucesso!";
         ["p-meu-turno-data","p-meu-turno-periodo","p-turno-pretendido-data","p-turno-pretendido-periodo","p-colega","p-descricao"]
-          .forEach(id => { const el = document.getElementById(id); el.value = ""; });
+          .forEach(id => { document.getElementById(id).value = ""; });
       } catch(e) { msg.style.color = "red"; msg.textContent = "Erro: " + e.message; }
     });
   });
