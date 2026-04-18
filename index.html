@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>MeuTurno</title>
-  <link rel="manifest" href="manifest.json">
+  <link rel="manifest" href="/meuturno/manifest.json">
   <meta name="theme-color" content="#2AA8A8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="MeuTurno">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="/meuturno/icon-192.png">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background: #f0f4f7; color: #333; }
@@ -22,7 +22,7 @@
     .login-box input { width: 100%; padding: 13px 14px; margin: 7px 0; border-radius: 10px; border: 1.5px solid #ddd; font-size: 15px; outline: none; }
     .login-box input:focus { border-color: #2AA8A8; }
     .login-box button { width: 100%; padding: 14px; margin-top: 10px; background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; }
-    #login-error { color: #e74c3c; text-align: center; margin-top: 10px; font-size: 13px; min-height: 18px; word-break: break-all; }
+    #login-error { color: #e74c3c; text-align: center; margin-top: 10px; font-size: 13px; min-height: 18px; }
     #app-screen { max-width: 100%; margin: 0 auto; padding-bottom: 80px; }
     .app-header { background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     .app-header .title { font-size: 18px; font-weight: 700; }
@@ -83,7 +83,7 @@
   <h1>MeuTurno</h1>
   <p>Imagiologia &middot; Aliva Sa&uacute;de</p>
   <div class="login-box">
-    <input type="email" id="login-email" placeholder="Email institucional" autocomplete="email">
+    <input type="text" id="login-email" placeholder="Email ou nome de utilizador" autocomplete="username">
     <input type="password" id="login-pass" placeholder="Password" autocomplete="current-password">
     <button id="btn-login">Entrar</button>
     <div id="login-error"></div>
@@ -271,14 +271,16 @@
   });
 
   document.getElementById("btn-login").addEventListener("click", async () => {
-    const email = document.getElementById("login-email").value.trim();
+    let input = document.getElementById("login-email").value.trim();
     const pass = document.getElementById("login-pass").value;
     const err = document.getElementById("login-error");
     err.textContent = "";
+    // Se não tem @ é assistente — adiciona domínio fictício
+    let email = input.includes("@") ? input : input + "@imagiologia.local";
     try {
       await signInWithEmailAndPassword(auth, email, pass);
     } catch(e) {
-      err.textContent = "Email ou password incorretos.";
+      err.textContent = "Utilizador ou password incorretos.";
     }
   });
 
