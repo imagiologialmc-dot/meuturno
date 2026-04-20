@@ -63,7 +63,7 @@
     .horario-tab.active { background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border-color: transparent; }
     .iframe-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.07); width: 100%; }
     .iframe-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .iframe-container iframe { width: 100%; min-width: 320px; height: calc(100vh - 160px); min-height: 350px; border: none; display: block; }
+    .iframe-container iframe { width: 100%; min-width: 320px; height: calc(100vh - 200px); min-height: 400px; border: none; display: block; }
     .empty-msg { padding: 40px; text-align: center; color: #aaa; font-size: 14px; }
     .form-card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); margin-bottom: 16px; }
     .form-card h3 { color: #2D6E8E; margin-bottom: 14px; font-size: 16px; }
@@ -90,26 +90,6 @@
     .filtro-tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
     .filtro-btn { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #2AA8A8; background: white; color: #2AA8A8; font-size: 12px; font-weight: 600; cursor: pointer; }
     .filtro-btn.active { background: #2AA8A8; color: white; }
-
-    /* Desktop */
-    @media (min-width: 900px) {
-      #app-screen { padding-bottom: 80px; }
-      .iframe-container iframe { height: calc(100vh - 200px); min-height: 600px; }
-      .tab-content { padding: 18px 22px; }
-    }
-
-    /* Mobile portrait — aproveita o máximo de ecrã */
-    @media (max-width: 900px) and (orientation: portrait) {
-      .iframe-container iframe { height: calc(100vh - 160px); min-height: 350px; }
-    }
-
-    /* Mobile landscape — esconde nav e ocupa tudo */
-    @media (max-width: 900px) and (orientation: landscape) {
-      #app-screen { padding-bottom: 0; }
-      .bottom-nav { display: none; }
-      .iframe-container iframe { height: calc(100vh - 70px); min-height: 300px; }
-      .tab-content { padding: 8px 10px; }
-    }
   </style>
 </head>
 <body>
