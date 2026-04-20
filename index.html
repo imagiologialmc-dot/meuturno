@@ -33,7 +33,7 @@
     #change-pass-screen h2 { color: white; font-size: 24px; margin-bottom: 4px; }
     #change-pass-screen p { color: rgba(255,255,255,0.8); margin-bottom: 24px; font-size: 14px; text-align: center; }
 
-    #app-screen { width: 100%; min-height: 100vh; margin: 0 auto; padding-bottom: 80px; }
+    #app-screen { width: 100%; min-height: 100vh; padding-bottom: 80px; }
     .app-header { background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     .app-header .title { font-size: 18px; font-weight: 700; }
     .btn-logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; cursor: pointer; margin-left: 10px; }
@@ -63,7 +63,7 @@
     .horario-tab.active { background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border-color: transparent; }
     .iframe-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.07); width: 100%; }
     .iframe-wrapper { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .iframe-container iframe { width: 100%; min-width: 320px; height: calc(100vh - 200px); min-height: 400px; border: none; display: block; }
+    .iframe-container iframe { width: 100%; min-width: 320px; height: calc(100vh - 160px); min-height: 350px; border: none; display: block; }
     .empty-msg { padding: 40px; text-align: center; color: #aaa; font-size: 14px; }
     .form-card { background: white; border-radius: 12px; padding: 18px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); margin-bottom: 16px; }
     .form-card h3 { color: #2D6E8E; margin-bottom: 14px; font-size: 16px; }
@@ -91,12 +91,19 @@
     .filtro-btn { padding: 7px 14px; border-radius: 20px; border: 1.5px solid #2AA8A8; background: white; color: #2AA8A8; font-size: 12px; font-weight: 600; cursor: pointer; }
     .filtro-btn.active { background: #2AA8A8; color: white; }
 
+    /* Desktop */
     @media (min-width: 900px) {
-      #app-screen { min-height: 100vh; padding-bottom: 0; }
-      .bottom-nav { display: none; }
-      .iframe-container iframe { height: calc(100vh - 120px); min-height: 650px; }
+      #app-screen { padding-bottom: 80px; }
+      .iframe-container iframe { height: calc(100vh - 200px); min-height: 600px; }
       .tab-content { padding: 18px 22px; }
     }
+
+    /* Mobile portrait — aproveita o máximo de ecrã */
+    @media (max-width: 900px) and (orientation: portrait) {
+      .iframe-container iframe { height: calc(100vh - 160px); min-height: 350px; }
+    }
+
+    /* Mobile landscape — esconde nav e ocupa tudo */
     @media (max-width: 900px) and (orientation: landscape) {
       #app-screen { padding-bottom: 0; }
       .bottom-nav { display: none; }
@@ -122,7 +129,7 @@
   </div>
 </div>
 
-<!-- ECRÃ ALTERAR PASSWORD (utilizadores locais sem email) -->
+<!-- ECRÃ ALTERAR PASSWORD -->
 <div id="change-pass-screen" class="hidden">
   <div class="cp-icon">&#128272;</div>
   <h2>Alterar Password</h2>
@@ -370,7 +377,6 @@
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
-      // Não força alteração automaticamente via onAuthStateChanged — só no login manual
       await iniciarApp(user);
     } else {
       currentUser = null;
@@ -380,7 +386,6 @@
     }
   });
 
-  // LOGIN
   document.getElementById("btn-login").addEventListener("click", async () => {
     let input = document.getElementById("login-email").value.trim();
     const pass = document.getElementById("login-pass").value;
@@ -389,7 +394,6 @@
     const email = input.includes("@") ? input : input + "@imagiologia.local";
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-      // Força alteração se domínio local e password padrão
       if (isLocalEmail(email) && pass === PASSWORD_PADRAO) {
         mostrarAlterarPassword();
       }
@@ -398,22 +402,15 @@
     }
   });
 
-  // ESQUECI A PASSWORD
   document.getElementById("btn-reset").addEventListener("click", async () => {
     const input = document.getElementById("login-email").value.trim();
     const pass = document.getElementById("login-pass").value;
     const msg = document.getElementById("reset-msg");
     msg.textContent = "";
-    if (!input) {
-      msg.style.color = "red"; msg.textContent = "Insere o utilizador ou email."; return;
-    }
+    if (!input) { msg.style.color = "red"; msg.textContent = "Insere o utilizador ou email."; return; }
     const email = input.includes("@") ? input : input + "@imagiologia.local";
-
     if (isLocalEmail(email)) {
-      // Sem email real — faz login e abre ecrã de alteração
-      if (!pass) {
-        msg.style.color = "red"; msg.textContent = "Insere a password atual para continuar."; return;
-      }
+      if (!pass) { msg.style.color = "red"; msg.textContent = "Insere a password atual para continuar."; return; }
       try {
         await signInWithEmailAndPassword(auth, email, pass);
         mostrarAlterarPassword();
@@ -421,7 +418,6 @@
         msg.style.color = "red"; msg.textContent = "Password atual incorreta.";
       }
     } else {
-      // Tem email real — envia recuperação pelo Firebase/SMTP
       try {
         await sendPasswordResetEmail(auth, email);
         msg.style.color = "green"; msg.textContent = "Email de recupera\u00e7\u00e3o enviado. Verifica a caixa de entrada.";
@@ -431,17 +427,12 @@
     }
   });
 
-  // CONFIRMAR NOVA PASSWORD
   document.getElementById("btn-confirmar-nova-pass").addEventListener("click", async () => {
     const nova = document.getElementById("nova-pass").value;
     const confirma = document.getElementById("confirma-pass").value;
     const msg = document.getElementById("change-pass-msg");
-    if (nova.length < 6) {
-      msg.style.color = "red"; msg.textContent = "A password deve ter pelo menos 6 caracteres."; return;
-    }
-    if (nova !== confirma) {
-      msg.style.color = "red"; msg.textContent = "As passwords n\u00e3o coincidem."; return;
-    }
+    if (nova.length < 6) { msg.style.color = "red"; msg.textContent = "A password deve ter pelo menos 6 caracteres."; return; }
+    if (nova !== confirma) { msg.style.color = "red"; msg.textContent = "As passwords n\u00e3o coincidem."; return; }
     try {
       await updatePassword(auth.currentUser, nova);
       msg.style.color = "green"; msg.textContent = "Password alterada com sucesso!";
@@ -551,12 +542,8 @@
     const colega_nome = colegaSelect.options[colegaSelect.selectedIndex]?.dataset.nome || "";
     const descricao = document.getElementById("p-descricao").value.trim();
     const msg = document.getElementById("pedido-msg");
-    if (!meuData || !meuPeriodo || !pretData || !pretPeriodo) {
-      msg.style.color = "red"; msg.textContent = "Preenche a data e turno dos dois campos."; return;
-    }
-    if (!colega_email) {
-      msg.style.color = "red"; msg.textContent = "Seleciona um colega."; return;
-    }
+    if (!meuData || !meuPeriodo || !pretData || !pretPeriodo) { msg.style.color = "red"; msg.textContent = "Preenche a data e turno dos dois campos."; return; }
+    if (!colega_email) { msg.style.color = "red"; msg.textContent = "Seleciona um colega."; return; }
     const meuTurno = formato(meuData, meuPeriodo);
     const turnoPretendido = formato(pretData, pretPeriodo);
     const nomeAutor = currentUser.displayName || currentUser.email.split("@")[0];
