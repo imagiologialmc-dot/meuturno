@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>MeuTurno</title>
+  <link rel="manifest" href="/meuturno/manifest.json">
+  <meta name="theme-color" content="#2AA8A8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="/meuturno/icon-192.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background: #f0f4f7; color: #333; overflow-x: hidden; }
+    .hidden { display: none !important; }
+    
+    /* LOGIN */
+    #login-screen, #change-pass-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(135deg, #2AA8A8 0%, #2D6E8E 100%); }
+    .login-box { background: white; border-radius: 16px; padding: 25px; width: 100%; max-width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+    .login-box input { width: 100%; padding: 13px; margin: 8px 0; border-radius: 10px; border: 1.5px solid #ddd; outline: none; }
+    .btn-main { width: 100%; padding: 14px; background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
+
+    /* APP HEADER */
+    .app-header { background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    .btn-logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; cursor: pointer; }
+
+    /* CONTEÚDO */
+    .tab-content { padding: 12px; padding-bottom: 90px; }
+    .section-title { font-size: 18px; font-weight: 700; color: #2D6E8E; margin-bottom: 12px; }
+
+    /* VISUALIZADOR DE HORÁRIOS (A PARTE QUE ALTERÁMOS) */
+    .viewer-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.07); margin-bottom: 16px; }
+    .viewer-actions { display: flex; background: #f8f9fa; border-bottom: 1px solid #eee; }
+    .btn-action { flex: 1; padding: 12px; text-align: center; text-decoration: none; color: #2D6E8E; font-size: 11px; font-weight: 700; border-right: 1px solid #eee; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .iframe-wrapper { width: 100%; overflow: auto; -webkit-overflow-scrolling: touch; }
+    iframe { width: 100%; height: calc(100svh - 280px); min-height: 400px; border: none; display: block; background: #fff; }
+
+    /* TABS MESES */
+    .month-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+    .btn-month { flex: 1; padding: 10px; border: 2px solid #2AA8A8; border-radius: 8px; background: white; color: #2AA8A8; font-weight: bold; cursor: pointer; font-size: 12px; }
+    .btn-month.active { background: #2AA8A8; color: white; }
+
+    /* CARDS (AVISOS E TROCAS) */
+    .card { background: white; border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.07); border-left: 4px solid #2AA8A8; }
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 15px; font-size: 11px; font-weight: bold; margin-top: 5px; }
+    .status-pendente { background: #fff3cd; color: #856404; }
+    .status-aprovado { background: #d1e7dd; color: #0f5132; }
+
+    /* NAVEGAÇÃO */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e0e0e0; z-index: 100; }
+    .nav-btn { flex: 1; padding: 10px 2px; border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9px; color: #999; }
+    .nav-btn.active { color: #2AA8A8; }
+    .nav-btn .icon { font-size: 20px; }
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div style="font-size: 50px; margin-bottom: 10px;">☢️</div>
+  <h1 style="color:white;">MeuTurno</h1>
+  <div class="login-box">
+    <input type="text" id="login-email" placeholder="Utilizador ou Email">
+    <input type="password" id="login-pass" placeholder="Password">
+    <button class="btn-main" id="btn-login">Entrar</button>
+    <div id="login-error" style="color:red; font-size:12px; margin-top:10px; text-align:center;"></div>
+  </div>
+</div>
+
+<div id="app-screen" class="hidden">
+  <div class="app-header">
+    <div><strong>☢️ MeuTurno</strong></div>
+    <div style="display:flex; align-items:center; gap:8px;">
+        <span id="header-nome" style="font-size:10px;"></span>
+        <button class="btn-logout" id="btn-logout">Sair</button>
+    </div>
+  </div>
+
+  <div id="tab-avisos" class="tab-content">
+    <div class="section-title">📢 Quadro de Avisos</div>
+    <button id="btn-novo-aviso" class="btn-main hidden" style="margin-bottom:15px; padding:10px;">+ Novo Aviso</button>
+    <div id="lista-avisos"></div>
+  </div>
+
+  <div id="tab-tecnicos" class="tab-content hidden">
+    <div class="section-title">📅 Horário Técnicos</div>
+    <div class="month-tabs">
+        <button class="btn-month active" id="btn-tec-atual">Mês Atual</button>
+        <button class="btn-month" id="btn-tec-prox">Próximo Mês</button>
+    </div>
+    <div class="viewer-card">
+      <div class="viewer-actions">
+        <a href="#" id="f-tec" class="btn-action" target="_blank">🔍 Tela Cheia</a>
+        <a href="#" id="p-tec" class="btn-action" target="_blank">🖨️ Imprimir</a>
+      </div>
+      <div id="div-tec"></div>
+    </div>
+  </div>
+
+  <div id="tab-medicos" class="tab-content hidden">
+    <div class="section-title">🩺 Horário Médicos</div>
+    <div class="viewer-card">
+      <div class="viewer-actions">
+        <a href="#" id="f-med" class="btn-action" target="_blank">🔍 Tela Cheia</a>
+        <a href="#" id="p-med" class="btn-action" target="_blank">🖨️ Imprimir</a>
+      </div>
+      <div id="div-med"></div>
+    </div>
+  </div>
+
+  <div id="tab-oncall" class="tab-content hidden">
+    <div class="section-title">🚨 Oncall Anestesia</div>
+    <div class="viewer-card">
+      <div class="viewer-actions">
+        <a href="#" id="f-oncall" class="btn-action" target="_blank">🔍 Tela Cheia</a>
+        <a href="#" id="p-oncall" class="btn-action" target="_blank">🖨️ Imprimir</a>
+      </div>
+      <div id="div-oncall"></div>
+    </div>
+  </div>
+
+  <div id="tab-telefones" class="tab-content hidden">
+    <div class="section-title">📞 Lista Telefónica</div>
+    <div class="viewer-card">
+      <div class="viewer-actions">
+        <a href="#" id="f-tel" class="btn-action" target="_blank">🔍 Tela Cheia</a>
+        <a href="#" id="p-tel" class="btn-action" target="_blank">🖨️ Imprimir</a>
+      </div>
+      <div id="div-tel"></div>
+    </div>
+  </div>
+
+  <div id="tab-pedidos" class="tab-content hidden">
+    <div class="section-title">🔄 Pedir Troca</div>
+    <div class="card" style="border-left:4px solid #2D6E8E">
+        <input type="date" id="p-data" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+        <input type="text" id="p-turno" placeholder="O teu turno (ex: Manhã)" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;">
+        <select id="p-colega" style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:8px;"><option value="">Selecionar Colega</option></select>
+        <button class="btn-main" id="btn-enviar-pedido">Enviar Pedido</button>
+        <div id="pedido-msg" style="text-align:center; margin-top:10px; font-size:12px;"></div>
+    </div>
+    <div class="section-title" style="margin-top:20px;">📋 Meus Pedidos</div>
+    <div id="meus-pedidos"></div>
+  </div>
+
+  <div id="tab-gestao" class="tab-content hidden">
+    <div class="section-title">⚙️ Gestão de Trocas</div>
+    <div id="lista-gestao"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="avisos"><span class="icon">📢</span>Avisos</button>
+    <button class="nav-btn" data-tab="tecnicos"><span class="icon">📅</span>Técnicos</button>
+    <button class="nav-btn" data-tab="medicos"><span class="icon">🩺</span>Médicos</button>
+    <button class="nav-btn" data-tab="oncall"><span class="icon">🚨</span>Oncall</button>
+    <button class="nav-btn" data-tab="telefones"><span class="icon">📞</span>Lista</button>
+    <button class="nav-btn" data-tab="pedidos"><span class="icon">🔄</span>Trocas</button>
+    <button class="nav-btn hidden" id="nav-gestao" data-tab="gestao"><span class="icon">⚙️</span>Gestão</button>
+  </nav>
+</div>
+
+<div id="modal-aviso" class="modal-overlay hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px;">
+  <div class="login-box">
+    <h3>Novo Aviso</h3>
+    <textarea id="aviso-texto" style="width:100%; height:100px; margin:10px 0; padding:10px; border-radius:8px; border:1px solid #ddd;"></textarea>
+    <div style="display:flex; gap:10px;">
+      <button onclick="document.getElementById('modal-aviso').classList.add('hidden')" style="flex:1; padding:10px; border-radius:8px; border:1px solid #ccc; background:#eee;">Cancelar</button>
+      <button id="btn-publicar" class="btn-main" style="flex:1; margin-top:0;">Publicar</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, onSnapshot, collection, addDoc, query, orderBy, where, updateDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDnQ5fQFmx1-48lJwcaJhSKq2Y8MAaNAcY",
+    authDomain: "meuturno-d7d1a.firebaseapp.com",
+    projectId: "meuturno-d7d1a",
+    storageBucket: "meuturno-d7d1a.firebasestorage.app",
+    messagingSenderId: "634840990788",
+    appId: "1:634840990788:web:3b7b0e8d1d051959d86811"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const ADMINS = ["carlos.martins@alivasaude.com", "ana.baiao@alivasaude.com"];
+
+  let currentUser = null;
+  let linksDB = {};
+
+  // VISUALIZADOR INTELIGENTE (DETETA PDF/EXCEL E LIMPA O LINK)
+  function configurarViewer(divId, fId, pId, rawUrl) {
+    const wrapper = document.getElementById(divId);
+    if (!rawUrl) { wrapper.innerHTML = "<p style='padding:20px; text-align:center;'>Link não configurado.</p>"; return; }
+    
+    // Extrai o link limpo se o utilizador colou o iframe todo por engano
+    let url = rawUrl.includes('<iframe') ? rawUrl.match(/src="([^"]+)"/)[1] : rawUrl.trim();
+    
+    // Configuração para PDF do OneDrive
+    if (url.includes("/b/c/")) {
+        if (!url.includes("action=")) url += (url.includes("?") ? "&" : "?") + "action=embedview";
+    } 
+    // Configuração para Excel do OneDrive
+    else if (url.includes("1drv.ms")) {
+        url += "&wdHideSheetTabs=True&wdDownloadButton=False";
+    }
+
+    document.getElementById(fId).href = url;
+    document.getElementById(pId).href = url;
+    wrapper.innerHTML = `<div class="iframe-wrapper"><iframe src="${url}"></iframe></div>`;
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("app-screen").classList.remove("hidden");
+      document.getElementById("header-nome").textContent = user.email.split("@")[0];
+
+      if (ADMINS.includes(user.email)) {
+          document.getElementById("btn-novo-aviso").classList.remove("hidden");
+          document.getElementById("nav-gestao").classList.remove("hidden");
+          carregarGestao();
+      }
+
+      // Escutar Links do Firebase (Real-time)
+      onSnapshot(doc(db, "Config", "links"), snap => {
+        if (snap.exists()) {
+          linksDB = snap.data();
+          configurarViewer("div-tec", "f-tec", "p-tec", linksDB.horario_tecnicos_atual);
+          configurarViewer("div-med", "f-med", "p-med", linksDB.horario_medicos_atual);
+          configurarViewer("div-oncall", "f-oncall", "p-oncall", linksDB.oncall);
+          configurarViewer("div-tel", "f-tel", "p-tel", linksDB.telefones);
+        }
+      });
+
+      carregarAvisos();
+      carregarMeusPedidos();
+      carregarColegas();
+    } else {
+      document.getElementById("app-screen").classList.add("hidden");
+      document.getElementById("login-screen").classList.remove("hidden");
+    }
+  });
+
+  // GESTÃO DE TABS PRINCIPAIS
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-content").forEach(t => t.classList.add("hidden"));
+      document.querySelectorAll(".nav-btn").forEach(n => n.classList.remove("active"));
+      document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
+      btn.classList.add("active");
+    });
+  });
+
+  // TROCA DE MÊS (TÉCNICOS)
+  document.getElementById("btn-tec-atual").addEventListener("click", () => {
+    document.getElementById("btn-tec-atual").classList.add("active");
+    document.getElementById("btn-tec-prox").classList.remove("active");
+    configurarViewer("div-tec", "f-tec", "p-tec", linksDB.horario_tecnicos_atual);
+  });
+  document.getElementById("btn-tec-prox").addEventListener("click", () => {
+    document.getElementById("btn-tec-prox").classList.add("active");
+    document.getElementById("btn-tec-atual").classList.remove("active");
+    configurarViewer("div-tec", "f-tec", "p-tec", linksDB.horario_tecnicos_proximo);
+  });
+
+  // --- FUNÇÕES ORIGINAIS RESTAURADAS ---
+
+  function carregarAvisos() {
+    onSnapshot(query(collection(db, "Avisos"), orderBy("createdAt", "desc")), snap => {
+        const div = document.getElementById("lista-avisos");
+        div.innerHTML = "";
+        snap.forEach(d => {
+            const a = d.data();
+            div.innerHTML += `<div class="card"><strong>👤 ${a.autor}</strong><p style="font-size:14px; margin-top:5px;">${a.texto}</p></div>`;
+        });
+    });
+  }
+
+  document.getElementById("btn-novo-aviso").addEventListener("click", () => document.getElementById("modal-aviso").classList.remove("hidden"));
+  document.getElementById("btn-publicar").addEventListener("click", async () => {
+    const texto = document.getElementById("aviso-texto").value;
+    if (!texto) return;
+    await addDoc(collection(db, "Avisos"), { texto, autor: currentUser.email.split("@")[0], createdAt: serverTimestamp() });
+    document.getElementById("modal-aviso").classList.add("hidden");
+    document.getElementById("aviso-texto").value = "";
+  });
+
+  async function carregarColegas() {
+    const snap = await getDocs(collection(db, "Utilizadores"));
+    const sel = document.getElementById("p-colega");
+    sel.innerHTML = '<option value="">Selecionar Colega</option>';
+    snap.forEach(d => {
+        if(d.data().email !== currentUser.email) {
+            const opt = document.createElement("option");
+            opt.value = d.data().email;
+            opt.textContent = d.data().nome || d.data().email;
+            sel.appendChild(opt);
+        }
+    });
+  }
+
+  document.getElementById("btn-enviar-pedido").addEventListener("click", async () => {
+    const msg = document.getElementById("pedido-msg");
+    const colega = document.getElementById("p-colega").value;
+    if(!colega) return;
+    try {
+        await addDoc(collection(db, "Pedidos"), {
+            email: currentUser.email,
+            nome: currentUser.email.split("@")[0],
+            meuTurno: document.getElementById("p-data").value + " ("+document.getElementById("p-turno").value+")",
+            colega_email: colega,
+            status: "pendente",
+            createdAt: serverTimestamp()
+        });
+        msg.innerHTML = "<span style='color:green'>Sucesso!</span>";
+    } catch(e) { msg.innerHTML = "<span style='color:red'>Erro.</span>"; }
+  });
+
+  function carregarMeusPedidos() {
+    onSnapshot(query(collection(db, "Pedidos"), where("email", "==", currentUser.email)), snap => {
+        const div = document.getElementById("meus-pedidos");
+        div.innerHTML = snap.empty ? "<p style='font-size:12px; color:#aaa;'>Sem pedidos enviados.</p>" : "";
+        snap.forEach(d => {
+            const p = d.data();
+            div.innerHTML += `<div class="card">Troca de ${p.meuTurno}<br><span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span></div>`;
+        });
+    });
+  }
+
+  function carregarGestao() {
+    onSnapshot(query(collection(db, "Pedidos"), where("status", "==", "pendente")), snap => {
+        const div = document.getElementById("lista-gestao");
+        div.innerHTML = snap.empty ? "<p style='padding:20px; color:#aaa;'>Sem pedidos para aprovar.</p>" : "";
+        snap.forEach(d => {
+            const p = d.data();
+            const card = document.createElement("div");
+            card.className = "card";
+            card.innerHTML = `<strong>${p.nome}</strong> quer trocar ${p.meuTurno}<br>
+                             <button onclick="window.decidirTroca('${d.id}', 'aprovado')" style="color:green; margin-top:10px; font-weight:bold; background:none; border:none; cursor:pointer;">APROVAR</button> | 
+                             <button onclick="window.decidirTroca('${d.id}', 'reprovado')" style="color:red; margin-top:10px; font-weight:bold; background:none; border:none; cursor:pointer;">REPROVAR</button>`;
+            div.appendChild(card);
+        });
+    });
+  }
+
+  window.decidirTroca = async (id, acao) => {
+      await updateDoc(doc(db, "Pedidos", id), { status: acao });
+  };
+
+  document.getElementById("btn-login").addEventListener("click", async () => {
+    const u = document.getElementById("login-email").value;
+    const p = document.getElementById("login-pass").value;
+    const email = u.includes("@") ? u : u + "@imagiologia.local";
+    try { await signInWithEmailAndPassword(auth, email, p); }
+    catch(e) { document.getElementById("login-error").textContent = "Erro no acesso."; }
+  });
+
+  document.getElementById("btn-logout").addEventListener("click", () => signOut(auth));
+
+</script>
+</body>
+</html>
