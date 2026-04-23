@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>MeuTurno</title>
+  <link rel="manifest" href="/meuturno/manifest.json">
+  <meta name="theme-color" content="#2AA8A8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="/meuturno/icon-192.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background: #f0f4f7; color: #333; overflow-x: hidden; }
+    .hidden { display: none !important; }
+    
+    /* LOGIN */
+    #login-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; background: linear-gradient(135deg, #2AA8A8, #2D6E8E); }
+    .login-box { background: white; border-radius: 16px; padding: 25px; width: 100%; max-width: 360px; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+    .login-box input { width: 100%; padding: 13px; margin: 8px 0; border-radius: 10px; border: 1.5px solid #ddd; outline: none; }
+    .btn-login-main { width: 100%; padding: 14px; background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
+
+    /* HEADER */
+    .app-header { background: linear-gradient(135deg, #2AA8A8, #2D6E8E); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+    .tab-content { padding: 12px; padding-bottom: 90px; }
+    .section-title { font-size: 18px; font-weight: 700; color: #2D6E8E; margin-bottom: 12px; }
+
+    /* VISUALIZADOR */
+    .viewer-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 6px rgba(0,0,0,0.07); margin-bottom: 16px; }
+    .viewer-actions { display: flex; background: #f8f9fa; border-bottom: 1px solid #eee; }
+    .btn-action { flex: 1; padding: 12px; text-align: center; text-decoration: none; color: #2D6E8E; font-size: 12px; font-weight: 700; border-right: 1px solid #eee; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn-action:last-child { border-right: none; }
+    
+    iframe { width: 100%; height: calc(100svh - 260px); min-height: 450px; border: none; display: block; background: #fff; }
+
+    /* TABS MESES */
+    .month-tabs { display: flex; gap: 8px; margin-bottom: 10px; }
+    .btn-month { flex: 1; padding: 10px; border: 2px solid #2AA8A8; border-radius: 8px; background: white; color: #2AA8A8; font-weight: bold; cursor: pointer; }
+    .btn-month.active { background: #2AA8A8; color: white; }
+
+    /* NAV FUNDO */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; border-top: 1px solid #e0e0e0; z-index: 100; }
+    .nav-btn { flex: 1; padding: 10px 2px; border: none; background: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9px; color: #999; }
+    .nav-btn.active { color: #2AA8A8; }
+    .nav-btn .icon { font-size: 20px; }
+    
+    .card-aviso { background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px; border-left: 5px solid #2AA8A8; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div style="font-size: 50px; margin-bottom: 10px;">☢️</div>
+  <h1 style="color:white; margin-bottom: 20px;">MeuTurno</h1>
+  <div class="login-box">
+    <input type="text" id="l-user" placeholder="Utilizador">
+    <input type="password" id="l-pass" placeholder="Password">
+    <button class="btn-login-main" id="btn-entrar">ENTRAR</button>
+    <div id="l-err" style="color:red; font-size:12px; text-align:center; margin-top:10px;"></div>
+  </div>
+</div>
+
+<div id="app-screen" class="hidden">
+  <div class="app-header">
+    <div><strong>☢️ MeuTurno</strong></div>
+    <button id="btn-sair" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:5px 12px; border-radius:15px; font-size:11px;">Sair</button>
+  </div>
+
+  <div id="tab-tecnicos" class="tab-content">
+    <div class="section-title">📅 Horário Técnicos</div>
+    <div class="month-tabs">
+        <button class="btn-month active" id="btn-t-atual">Mês Atual</button>
+        <button class="btn-month" id="btn-t-prox">Próximo Mês</button>
+    </div>
+    <div class="viewer-card">
+      <div class="viewer-actions">
+        <a href="#" id="f-tec" class="btn-action" target="_blank">🔍 Tela Cheia</a>
+        <a href="#" id="p-tec" class="btn-action" target="_blank">🖨️ Imprimir</a>
+      </div>
+      <div id="div-tec"></div>
+    </div>
+  </div>
+
+  <div id="tab-oncall" class="tab-content hidden">
+    <div class="section-title">🚨 Oncall Anestesia</div>
+    <div class="viewer-card">
+      <div class="viewer-actions">
+        <a href="#" id="f-oncall" class="btn-action" target="_blank">🔍 Tela Cheia</a>
+        <a href="#" id="p-oncall" class="btn-action" target="_blank">🖨️ Imprimir</a>
+      </div>
+      <div id="div-oncall"></div>
+    </div>
+  </div>
+
+  <div id="tab-telefones" class="tab-content hidden">
+    <div class="section-title">📞 Lista Telefónica</div>
+    <div class="viewer-card">
+      <div class="viewer-actions">
+        <a href="#" id="f-tel" class="btn-action" target="_blank">🔍 Tela Cheia</a>
+        <a href="#" id="p-tel" class="btn-action" target="_blank">🖨️ Imprimir</a>
+      </div>
+      <div id="div-tel"></div>
+    </div>
+  </div>
+
+  <div id="tab-avisos" class="tab-content hidden">
+    <div class="section-title">📢 Quadro de Avisos</div>
+    <div id="lista-avisos"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="tecnicos"><span class="icon">📅</span>Horário</button>
+    <button class="nav-btn" data-tab="oncall"><span class="icon">🚨</span>Oncall</button>
+    <button class="nav-btn" data-tab="telefones"><span class="icon">📞</span>Lista</button>
+    <button class="nav-btn" data-tab="avisos"><span class="icon">📢</span>Avisos</button>
+  </nav>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, onSnapshot, collection, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDnQ5fQFmx1-48lJwcaJhSKq2Y8MAaNAcY",
+    authDomain: "meuturno-d7d1a.firebaseapp.com",
+    projectId: "meuturno-d7d1a",
+    storageBucket: "meuturno-d7d1a.firebasestorage.app",
+    messagingSenderId: "634840990788",
+    appId: "1:634840990788:web:3b7b0e8d1d051959d86811"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let linksDB = {};
+
+  function configurarViewer(divId, fId, pId, rawUrl) {
+    const wrapper = document.getElementById(divId);
+    if (!rawUrl) { wrapper.innerHTML = "<p style='padding:20px;'>Link indisponível.</p>"; return; }
+    
+    // Limpa o link se tiver tags iframe
+    let url = rawUrl.includes('<iframe') ? rawUrl.match(/src="([^"]+)"/)[1] : rawUrl.trim();
+    
+    // Otimiza para PDF do OneDrive
+    if (url.includes("/b/c/") && !url.includes("action=")) {
+        url += (url.includes("?") ? "&" : "?") + "action=embedview";
+    } else if (url.includes("1drv.ms") && !url.includes("/b/c/")) {
+        url += "&wdHideSheetTabs=True&wdDownloadButton=False";
+    }
+
+    document.getElementById(fId).href = url;
+    document.getElementById(pId).href = url;
+    wrapper.innerHTML = `<iframe src="${url}"></iframe>`;
+  }
+
+  onAuthStateChanged(auth, user => {
+    if (user) {
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("app-screen").classList.remove("hidden");
+      
+      onSnapshot(doc(db, "Config", "links"), snap => {
+        if (snap.exists()) {
+          linksDB = snap.data();
+          configurarViewer("div-tec", "f-tec", "p-tec", linksDB.horario_tecnicos_atual);
+          configurarViewer("div-oncall", "f-oncall", "p-oncall", linksDB.oncall);
+          configurarViewer("div-tel", "f-tel", "p-tel", linksDB.telefones);
+        }
+      });
+      carregarAvisos();
+    } else {
+      document.getElementById("app-screen").classList.add("hidden");
+      document.getElementById("login-screen").classList.remove("hidden");
+    }
+  });
+
+  // TROCA DE MÊS
+  document.getElementById("btn-t-atual").addEventListener("click", () => {
+    document.getElementById("btn-t-atual").classList.add("active");
+    document.getElementById("btn-t-prox").classList.remove("active");
+    configurarViewer("div-tec", "f-tec", "p-tec", linksDB.horario_tecnicos_atual);
+  });
+  document.getElementById("btn-t-prox").addEventListener("click", () => {
+    document.getElementById("btn-t-prox").classList.add("active");
+    document.getElementById("btn-t-atual").classList.remove("active");
+    configurarViewer("div-tec", "f-tec", "p-tec", linksDB.horario_tecnicos_proximo);
+  });
+
+  // NAVEGAÇÃO E LOGIN
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".tab-content").forEach(t => t.classList.add("hidden"));
+      document.querySelectorAll(".nav-btn").forEach(n => n.classList.remove("active"));
+      document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
+      btn.classList.add("active");
+    });
+  });
+
+  document.getElementById("btn-entrar").addEventListener("click", async () => {
+    const u = document.getElementById("l-user").value;
+    const p = document.getElementById("l-pass").value;
+    const email = u.includes("@") ? u : u + "@imagiologia.local";
+    try { await signInWithEmailAndPassword(auth, email, p); }
+    catch(e) { document.getElementById("l-err").textContent = "Erro no login."; }
+  });
+
+  document.getElementById("btn-sair").addEventListener("click", () => signOut(auth));
+
+  function carregarAvisos() {
+    onSnapshot(query(collection(db, "Avisos"), orderBy("createdAt", "desc")), snap => {
+        const div = document.getElementById("lista-avisos");
+        div.innerHTML = "";
+        snap.forEach(d => {
+            const a = d.data();
+            div.innerHTML += `<div class="card-aviso"><strong>${a.autor}</strong><p>${a.texto}</p></div>`;
+        });
+    });
+  }
+</script>
+</body>
+</html>
