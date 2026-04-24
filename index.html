@@ -525,12 +525,28 @@
           const chavesOrdenadas = Object.keys(linksDB).sort();
           
           for (const key of chavesOrdenadas) {
-              // CORREÇÃO: Validação segura de texto sem o (?i) para não quebrar o JS
-              if (key.match(/^qci[_\s]/i)) {
+              const lowerKey = key.toLowerCase();
+              if (lowerKey.startsWith("qci_") || lowerKey.startsWith("qci ")) {
                   hasForms = true;
                   
-                  // Remove "QCI_" ou "QCI " do início e troca os underscores por espaços
-                  let formName = key.replace(/^qci[_\s]*/i, '').replace(/_/g, " ");
+                  // Limpa prefixos e troca underscores
+                  let wordsRaw = key.replace(/^qci[_\s]*/i, '').replace(/_/g, " ");
+                  
+                  const siglas = ['RM', 'TC', 'MM', 'BAAF', 'QCI', 'EKG', 'RX'];
+                  const ligacoes = ['de', 'da', 'do', 'por', 'e', 'ou', 'com', 'para'];
+
+                  let formName = wordsRaw.split(' ').map((word, index) => {
+                      let trimW = word.trim();
+                      if(!trimW) return "";
+                      let upperW = trimW.toUpperCase();
+                      let lowerW = trimW.toLowerCase();
+                      
+                      if(siglas.includes(upperW)) return upperW;
+                      if(ligacoes.includes(lowerW) && index !== 0) return lowerW;
+                      return trimW.charAt(0).toUpperCase() + trimW.slice(1).toLowerCase();
+                  }).join(' ').trim();
+                  
+                  formName = formName.charAt(0).toUpperCase() + formName.slice(1);
                   
                   let rawUrl = linksDB[key];
                   let dlUrl = rawUrl;
@@ -543,9 +559,14 @@
                   }
 
                   dlUrl = dlUrl.trim();
-
-                  if(!dlUrl.includes("?")) dlUrl += "?download=1";
-                  else if(!dlUrl.includes("download=1")) dlUrl += "&download=1";
+                  
+                  // CORREÇÃO: Transforma link de embed em link de DOWNLOAD DIRETO (OneDrive)
+                  if(dlUrl.includes("onedrive.live.com/embed")) {
+                      dlUrl = dlUrl.replace("/embed", "/download");
+                  } else {
+                      if(!dlUrl.includes("?")) dlUrl += "?download=1";
+                      else if(!dlUrl.includes("download=1")) dlUrl += "&download=1";
+                  }
 
                   formsDiv.innerHTML += `
                       <div class="card" style="border-left-color: var(--primary); display:flex; align-items:center; justify-content:space-between; padding: 14px 16px; margin-bottom: 10px;">
@@ -553,7 +574,7 @@
                               <span class="material-symbols-rounded" style="color:var(--primary); font-size:24px;">description</span>
                               <strong style="font-size:13px; color:var(--text-main); word-break: break-word;">${formName}</strong>
                           </div>
-                          <a href="${dlUrl}" target="_blank" class="btn-main" style="margin:0; padding:8px 14px; width:auto; border-radius:8px; font-size:12px; display:flex; align-items:center; gap:6px; flex-shrink: 0;"><span class="material-symbols-rounded" style="font-size:16px;">download</span> Abrir</a>
+                          <a href="${dlUrl}" target="_blank" download class="btn-main" style="margin:0; padding:8px 14px; width:auto; border-radius:8px; font-size:12px; display:flex; align-items:center; gap:6px; flex-shrink: 0;"><span class="material-symbols-rounded" style="font-size:16px;">download</span> Download</a>
                       </div>
                   `;
               }
