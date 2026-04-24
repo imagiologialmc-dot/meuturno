@@ -1,0 +1,16 @@
+{
+  "name": "MeuTurno",
+  "short_name": "MeuTurno",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f0f4f7",
+  "theme_color": "#2AA8A8",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
