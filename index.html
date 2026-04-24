@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>MeuTurno v2.0</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2AA8A8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <link rel="icon" type="image/png" href="icon-512.png">
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap" rel="stylesheet">
+
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark-mode');
+      }
+    })();
+  </script>
+
+  <style>
+    /* VARIÁVEIS BASE (MODO CLARO - ALIVA BRANDING) */
+    :root { 
+      --primary: #2AA8A8; 
+      --secondary: #2D6E8E; 
+      --bg: #f0f4f7; 
+      --surface: #ffffff; 
+      --text-main: #333333;
+      --text-muted: #666666;
+      --border: #dddddd;
+      --card-shadow: 0 1px 6px rgba(0,0,0,0.07);
+      --nav-active: #2AA8A8;
+      --login-grad-1: #2AA8A8;
+      --login-grad-2: #2D6E8E;
+    }
+
+    /* MODO ESCURO (Android Style) 🌙 */
+    :root.dark-mode {
+      --bg: #202124;         
+      --surface: #292A2D;    
+      --text-main: #E8EAED;  
+      --text-muted: #9AA0A6; 
+      --border: #3C4043;     
+      --card-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      --nav-active: #4DD0E1; 
+      --login-grad-1: #163838; /* Gradiente noturno elegante para o fundo do login */
+      --login-grad-2: #142833;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; }
+    
+    body { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; 
+        background: var(--bg); 
+        color: var(--text-main); 
+        overflow-x: hidden; 
+        transition: background 0.3s ease, color 0.3s ease; 
+    }
+    
+    .hidden { display: none !important; }
+
+    .brand-text { font-family: 'Montserrat', sans-serif; font-weight: 800; letter-spacing: -0.5px; }
+    
+    /* LOGIN */
+    #login-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; background: linear-gradient(135deg, var(--login-grad-1) 0%, var(--login-grad-2) 100%); overflow: hidden; transition: background 0.3s ease; }
+    .logo-anim-container { position: relative; width: 280px; height: 150px; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; }
+    .logo-clinic { position: absolute; width: 240px; height: auto; object-fit: contain; animation: clinicPulse 3.5s forwards; }
+    .logo-app { position: absolute; width: 130px; height: 130px; border-radius: 32px; object-fit: cover; box-shadow: 0 15px 35px rgba(0,0,0,0.3); opacity: 0; animation: appFadeIn 3.5s forwards; }
+    
+    @keyframes clinicPulse { 0% { opacity: 0; transform: scale(0.9); } 15% { opacity: 1; transform: scale(1); } 35% { opacity: 1; transform: scale(1.05); } 60% { opacity: 1; transform: scale(1.05); } 80% { opacity: 0; transform: scale(0.9); } 100% { opacity: 0; transform: scale(0.9); visibility: hidden; } }
+    @keyframes appFadeIn { 0% { opacity: 0; transform: scale(0.5); } 75% { opacity: 0; transform: scale(0.5); } 90% { opacity: 1; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
+    
+    .login-form-container { width: 100%; max-width: 360px; display: flex; flex-direction: column; align-items: center; opacity: 0; animation: formEntry 1s forwards 2.8s; }
+    @keyframes formEntry { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
+    
+    .login-box { background: var(--surface); border-radius: 20px; padding: 30px 25px; width: 100%; box-shadow: var(--card-shadow); text-align: center; transition: background 0.3s; border: 1px solid var(--border); }
+    .login-box input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1.5px solid var(--border); outline: none; text-align: left; font-size: 15px; background: var(--bg); color: var(--text-main); transition: 0.3s; }
+    .login-box input:focus { border-color: var(--primary); }
+    
+    /* CORREÇÃO DO AUTOFILL NO MODO ESCURO */
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus, 
+    input:-webkit-autofill:active{
+        -webkit-box-shadow: 0 0 0 30px var(--bg) inset !important;
+        -webkit-text-fill-color: var(--text-main) !important;
+        transition: background-color 5000s ease-in-out 0s;
+    }
+    
+    .btn-main { width: 100%; padding: 15px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 15px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-main:disabled { background: #888; cursor: not-allowed; opacity: 0.7; }
+    #btn-forgot { margin-top: 15px; font-size: 13px; color: rgba(255,255,255,0.9); text-decoration: underline; cursor: pointer; display: inline-block; }
+
+    /* HEADER */
+    .app-header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .btn-logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+
+    /* CONTEÚDO TABS */
+    .tab-content { padding: 12px; padding-bottom: 90px; }
+    .section-title { font-size: 18px; font-weight: 700; color: var(--primary); margin: 15px 0; display: flex; align-items: center; gap: 8px; }
+
+    /* BOTÕES MÊS & FILTROS */
+    .toggle-container { display: flex; gap: 8px; margin-bottom: 15px; }
+    .btn-toggle { flex: 1; padding: 10px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; border: 2px solid var(--primary); }
+    .btn-toggle.active { background: var(--primary); color: white; }
+    .btn-toggle.inactive { background: var(--surface); color: var(--primary); }
+
+    .filter-container { display: flex; gap: 8px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 5px; }
+    .btn-filter { padding: 8px 16px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); white-space: nowrap; transition: 0.2s; display: inline-flex; align-items: center; gap: 6px; }
+    .btn-filter .material-symbols-rounded { font-size: 16px; }
+    .btn-filter.active[data-f="pendente"] { background: #fff3cd; color: #856404; border-color: #ffeeba; }
+    .btn-filter.active[data-f="aprovado"] { background: var(--primary); color: white; border-color: var(--primary); }
+    .btn-filter.active[data-f="reprovado"] { background: #f8d7da; color: #842029; border-color: #f5c6cb; }
+
+    /* CARDS */
+    .viewer-card { background: var(--surface); border-radius: 12px; overflow: hidden; box-shadow: var(--card-shadow); margin-bottom: 16px; border: 1px solid var(--border); transition: background 0.3s; }
+    .viewer-actions { display: flex; background: var(--bg); border-bottom: 1px solid var(--border); transition: background 0.3s; }
+    .btn-action { flex: 1; padding: 14px; text-align: center; text-decoration: none; color: var(--primary); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: background 0.2s; }
+    .btn-action:hover { background: var(--border); }
+    iframe { width: 100%; height: calc(100svh - 270px); min-height: 400px; border: none; display: block; background: #fff; }
+
+    .form-card { background: var(--surface); border-radius: 12px; padding: 20px; box-shadow: var(--card-shadow); margin-bottom: 16px; border-left: 4px solid var(--primary); text-align: left; transition: background 0.3s; }
+    .form-group { margin-bottom: 15px; }
+    .form-label { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .form-label .material-symbols-rounded { font-size: 18px; }
+    .form-card input, .form-card select, .form-card textarea { width: 100%; padding: 12px; margin-bottom: 8px; border-radius: 10px; border: 1px solid var(--border); outline: none; font-size: 14px; background: var(--bg); color: var(--text-main); transition: 0.3s; }
+    .form-card input:focus, .form-card select:focus, .form-card textarea:focus { border-color: var(--primary); }
+    .form-card textarea { resize: none; min-height: 80px; }
+
+    .card { background: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: var(--card-shadow); border-left: 4px solid var(--border); text-align: left; transition: background 0.3s; }
+    .pedido-header { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .pedido-header .material-symbols-rounded { font-size: 16px; }
+    .pedido-corpo { font-size: 14px; margin-bottom: 8px; color: var(--text-main); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .pedido-corpo .material-symbols-rounded { font-size: 16px; color: var(--text-muted); }
+    .pedido-obs { font-size: 13px; color: var(--text-muted); font-style: italic; background: var(--bg); padding: 10px; border-radius: 8px; margin-bottom: 10px; transition: background 0.3s; display: flex; align-items: flex-start; gap: 6px; }
+    .pedido-obs .material-symbols-rounded { font-size: 16px; margin-top: 1px; }
+    .pedido-footer { font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between; align-items: center; margin-top: 10px;}
+    
+    .card-pendente { border-left-color: #FFD700; }
+    .card-aprovado { border-left-color: var(--primary); }
+    .card-reprovado { border-left-color: #e74c3c; }
+
+    .status-badge { display: inline-flex; align-items: center; justify-content: center; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; gap: 4px; }
+    .status-pendente { background: #fff3cd; color: #856404; }
+    .status-aprovado { background: #d1e7dd; color: #0f5132; }
+    .status-reprovado { background: #f8d7da; color: #842029; }
+
+    /* NAVEGAÇÃO */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); display: flex; border-top: 1px solid var(--border); z-index: 100; overflow-x: auto; padding-bottom: env(safe-area-inset-bottom); transition: background 0.3s; }
+    .nav-btn { flex: 1; min-width: 62px; padding: 10px 2px 8px 2px; border: none; background: none; color: var(--text-muted); font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: color 0.2s; }
+    .nav-btn .icon { font-size: 24px; transition: transform 0.2s; font-variation-settings: 'FILL' 0; }
+    .nav-btn.active { color: var(--nav-active); font-weight: 700; }
+    .nav-btn.active .icon { font-variation-settings: 'FILL' 1; transform: scale(1.1); }
+
+    /* MODAIS */
+    .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
+    
+    .aviso-item-header { display:flex; justify-content:space-between; align-items:center; }
+    .aviso-item-autor { font-weight:700; display:flex; align-items:center; gap:6px; color:var(--primary); }
+    .aviso-item-data { font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:4px; }
+    .aviso-item-btn { font-size:12px; padding:6px 12px; border-radius:6px; border:1px solid var(--primary); background:transparent; color:var(--primary); font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; }
+    .aviso-item-btn:hover { background: var(--primary); color: white; }
+    .aviso-item-btn-text { font-size:12px; color:var(--secondary); font-weight:bold; border:none; background:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
+    
+    /* EMPTY STATES */
+    .empty-state { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 14px; }
+    .empty-state .material-symbols-rounded { font-size: 48px; color: var(--border); margin-bottom: 10px; display: block; }
+  </style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="logo-anim-container">
+    <img src="Hlogo.png" class="logo-clinic" onerror="this.style.display='none'" alt="Símbolo Clínica">
+    <img src="icon-512.png" class="logo-app" onerror="this.style.display='none'; document.getElementById('fallback-logo').style.display='flex';" alt="Símbolo App">
+    <div id="fallback-logo" style="display:none; font-size:64px; color:#FFD700; align-items:center; justify-content:center; width:100%; height:100%; animation: appFadeIn 3.5s forwards;">
+        <span class="material-symbols-rounded" style="font-size: 80px;">medical_services</span>
+    </div>
+  </div>
+
+  <div class="login-form-container">
+    <h1 class="brand-text" style="color:white; font-size:34px; margin-bottom:0px;">MeuTurno</h1>
+    <p style="color:rgba(255,255,255,0.8); font-size:14px; margin-bottom:25px; letter-spacing: 1px;">v2.0</p>
+    <div class="login-box">
+      <input type="text" id="login-email" placeholder="Utilizador ou Email">
+      <input type="password" id="login-pass" placeholder="Password">
+      <button class="btn-main" id="btn-login"><span class="material-symbols-rounded">login</span> ENTRAR</button>
+      <div id="login-error" style="color:#e74c3c; font-size:12px; margin-top:12px; font-weight:600; display:flex; align-items:center; justify-content:center; gap:4px;"></div>
+    </div>
+    <a id="btn-forgot">Esqueci-me da password</a>
+  </div>
+</div>
+
+<div id="app-screen" class="hidden">
+  <div class="app-header">
+    <div style="display:flex; align-items:center; gap:10px;">
+        <img src="icon-512.png" style="width: 28px; height: 28px; border-radius: 7px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.2);" onerror="this.style.display='none'; document.getElementById('header-text-icon').style.display='inline';" alt="Logo">
+        <span id="header-text-icon" class="material-symbols-rounded" style="display:none; font-size: 24px;">medical_services</span>
+        <strong class="brand-text" style="font-size:19px;">MeuTurno</strong>
+    </div>
+    <div style="display:flex; align-items:center; gap:14px;">
+        <span id="theme-toggle" class="material-symbols-rounded" style="cursor:pointer; font-size:22px; transition: transform 0.3s;" title="Mudar Tema">dark_mode</span>
+        <span id="header-bell" class="material-symbols-rounded" style="cursor:pointer; font-size:22px;" title="Gerir Notificações">notifications_off</span>
+        <div style="text-align:right; font-size:9px; line-height: 1.2;">
+            <span id="header-nome"></span><br>
+            <span id="admin-tag" class="hidden" style="color:#FFD700; font-weight:bold;">COORDENAÇÃO</span>
+        </div>
+        <button id="btn-logout" class="btn-logout"><span class="material-symbols-rounded" style="font-size: 14px;">logout</span> Sair</button>
+    </div>
+  </div>
+
+  <div id="tab-avisos" class="tab-content">
+    <div class="section-title"><span class="material-symbols-rounded">campaign</span> Quadro de Avisos</div>
+    <button id="btn-novo-aviso" class="btn-main hidden" style="margin-bottom:15px; width:auto; padding: 10px 20px;"><span class="material-symbols-rounded" style="font-size: 18px;">add_circle</span> Novo Aviso</button>
+    <div id="lista-avisos"></div>
+  </div>
+
+  <div id="tab-tecnicos" class="tab-content hidden">
+    <div class="section-title"><span class="material-symbols-rounded">calendar_month</span> Horário Técnicos</div>
+    <div class="toggle-container">
+        <button id="btn-tec-atual" class="btn-toggle active">Mês Atual</button>
+        <button id="btn-tec-prox" class="btn-toggle inactive">Próximo Mês</button>
+    </div>
+    <div class="viewer-card">
+      <div class="viewer-actions"><a href="#" id="dl-tec" class="btn-action" target="_blank"><span class="material-symbols-rounded" style="font-size: 18px;">download</span> Fazer Download</a></div>
+      <div id="div-tec"></div>
+    </div>
+  </div>
+
+  <div id="tab-medicos" class="tab-content hidden">
+    <div class="section-title"><span class="material-symbols-rounded">stethoscope</span> Horário Médicos</div>
+    <div class="toggle-container">
+        <button id="btn-med-atual" class="btn-toggle active">Mês Atual</button>
+        <button id="btn-med-prox" class="btn-toggle inactive">Próximo Mês</button>
+    </div>
+    <div class="viewer-card">
+      <div class="viewer-actions"><a href="#" id="dl-med" class="btn-action" target="_blank"><span class="material-symbols-rounded" style="font-size: 18px;">download</span> Fazer Download</a></div>
+      <div id="div-med"></div>
+    </div>
+  </div>
+
+  <div id="tab-oncall" class="tab-content hidden">
+    <div class="section-title"><span class="material-symbols-rounded">emergency</span> Oncall Anestesia</div>
+    <div class="viewer-card">
+      <div class="viewer-actions"><a href="#" id="dl-oncall" class="btn-action" target="_blank"><span class="material-symbols-rounded" style="font-size: 18px;">download</span> Fazer Download</a></div>
+      <div id="div-oncall"></div>
+    </div>
+  </div>
+
+  <div id="tab-telefones" class="tab-content hidden">
+    <div class="section-title"><span class="material-symbols-rounded">contact_phone</span> Contactos Úteis</div>
+    <div class="viewer-card">
+      <div class="viewer-actions"><a href="#" id="dl-tel" class="btn-action" target="_blank"><span class="material-symbols-rounded" style="font-size: 18px;">download</span> Fazer Download</a></div>
+      <div id="div-tel"></div>
+    </div>
+  </div>
+
+  <div id="tab-pedidos" class="tab-content hidden">
+    <div class="section-title"><span class="material-symbols-rounded">swap_horiz</span> Pedido de Troca</div>
+    <div class="form-card">
+        <div class="form-group">
+            <label class="form-label"><span class="material-symbols-rounded">event</span> O meu turno</label>
+            <input type="date" id="p-meu-data">
+            <input type="text" id="p-meu-periodo" placeholder="Ex: Manhã, Tarde, 8h-16h...">
+        </div>
+        <div class="form-group">
+            <label class="form-label"><span class="material-symbols-rounded">sync_alt</span> Turno pretendido</label>
+            <input type="date" id="p-pret-data">
+            <input type="text" id="p-pret-periodo" placeholder="Ex: Manhã, Tarde, 8h-16h...">
+        </div>
+        <div class="form-group">
+            <label class="form-label"><span class="material-symbols-rounded">person_search</span> Colega para trocar</label>
+            <select id="p-colega-select"><option value="">-- Seleciona colega --</option></select>
+        </div>
+        <div class="form-group">
+            <label class="form-label"><span class="material-symbols-rounded">edit_note</span> Motivo (opcional)</label>
+            <textarea id="p-motivo" placeholder="Descrição opcional..."></textarea>
+        </div>
+        <button class="btn-main" id="btn-enviar-pedido" style="margin-top:0;"><span class="material-symbols-rounded" style="font-size: 18px;">send</span> Enviar Pedido</button>
+        <div id="pedido-msg" style="text-align:center; margin-top:12px; font-size:14px; display:flex; justify-content:center; align-items:center; gap:6px;"></div>
+    </div>
+    <div class="section-title"><span class="material-symbols-rounded">history</span> Meus Pedidos</div>
+    <div id="meus-pedidos"></div>
+  </div>
+
+  <div id="tab-gestao" class="tab-content hidden">
+    <div class="section-title"><span class="material-symbols-rounded">settings</span> Gestão de Trocas</div>
+    <div class="filter-container">
+        <button class="btn-filter active" data-f="pendente"><span class="material-symbols-rounded">pending_actions</span> Pendentes</button>
+        <button class="btn-filter" data-f="aprovado"><span class="material-symbols-rounded">task_alt</span> Aprovados</button>
+        <button class="btn-filter" data-f="reprovado"><span class="material-symbols-rounded">cancel</span> Reprovados</button>
+    </div>
+    <div id="lista-gestao"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="avisos"><span class="material-symbols-rounded icon">campaign</span>Avisos</button>
+    <button class="nav-btn" data-tab="tecnicos"><span class="material-symbols-rounded icon">calendar_month</span>Técnicos</button>
+    <button class="nav-btn" data-tab="medicos"><span class="material-symbols-rounded icon">stethoscope</span>Médicos</button>
+    <button class="nav-btn" data-tab="oncall"><span class="material-symbols-rounded icon">emergency</span>Oncall</button>
+    <button class="nav-btn" data-tab="telefones"><span class="material-symbols-rounded icon">contact_phone</span>Lista</button>
+    <button class="nav-btn" data-tab="pedidos"><span class="material-symbols-rounded icon">sync_alt</span>Trocas</button>
+    <button id="nav-gestao" class="nav-btn hidden" data-tab="gestao"><span class="material-symbols-rounded icon">settings</span>Gestão</button>
+  </nav>
+</div>
+
+<div id="modal-notificacoes" class="modal-overlay hidden">
+    <div class="login-box" style="padding: 25px;">
+        <h3 class="brand-text" style="color:var(--primary); font-size:20px; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span class="material-symbols-rounded">notifications_active</span> Ativar Alertas
+        </h3>
+        <p style="font-size:14px; color:var(--text-muted); margin:15px 0;">Para seres avisado(a) sempre que tiveres uma nova troca de turno ou aviso da coordenação, ativa as notificações.</p>
+        <button id="btn-ativar-notif" class="btn-main" style="margin-bottom:10px;"><span class="material-symbols-rounded" style="font-size: 18px;">check</span> Ativar Notificações</button>
+        <button id="btn-mais-tarde" style="width:100%; padding:10px; background:none; border:none; color:var(--text-muted); font-weight:bold; cursor:pointer;">Mais Tarde</button>
+    </div>
+</div>
+
+<div id="modal-aviso" class="modal-overlay hidden">
+    <div class="login-box" style="text-align:left;">
+        <h3 class="brand-text" style="color:var(--primary); text-align:center; display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span class="material-symbols-rounded">edit_notifications</span> Novo Aviso
+        </h3>
+        <textarea id="aviso-texto" style="width:100%; height:120px; margin:15px 0; padding:10px; border-radius:10px; border:1px solid var(--border); background:var(--bg); color:var(--text-main); resize:none;" placeholder="Escreva aqui..."></textarea>
+        <div style="display:flex; gap:10px;">
+            <button onclick="document.getElementById('modal-aviso').classList.add('hidden')" style="flex:1; padding:12px; border-radius:10px; border:none; background:var(--bg); color:var(--text-main); font-weight:bold; cursor:pointer; border: 1px solid var(--border);">Cancelar</button>
+            <button id="btn-publicar" class="btn-main" style="flex:1; margin:0;"><span class="material-symbols-rounded" style="font-size: 18px;">publish</span> Publicar</button>
+        </div>
+    </div>
+</div>
+
+<div id="modal-vistos" class="modal-overlay hidden">
+    <div class="login-box">
+        <h3 class="brand-text" style="color:var(--primary); display:flex; align-items:center; justify-content:center; gap:8px;">
+            <span class="material-symbols-rounded">visibility</span> Confirmaram leitura:
+        </h3>
+        <div id="lista-vistos" style="max-height:250px; overflow:auto; margin:15px 0; font-size:14px; text-align:left; color:var(--text-main);"></div>
+        <button onclick="document.getElementById('modal-vistos').classList.add('hidden')" class="btn-main" style="margin-top:0;">Fechar</button>
+    </div>
+</div>
+
+<script>
+  (function(){
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js";
+    s.onload = () => emailjs.init("POYtv2l_dgsbXbtFF");
+    document.head.appendChild(s);
+  })();
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, onSnapshot, collection, query, where, orderBy, getDoc, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDnQ5fQFmx1-48lJwcaJhSKq2Y8MAaNAcY",
+    authDomain: "meuturno-d7d1a.firebaseapp.com",
+    projectId: "meuturno-d7d1a",
+    storageBucket: "meuturno-d7d1a.firebasestorage.app",
+    messagingSenderId: "634840990788",
+    appId: "1:634840990788:web:3b7b0e8d1d051959d86811"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const messaging = getMessaging(app);
+
+  const ADMINS = ["carlos.martins@alivasaude.com", "ana.baiao@alivasaude.com"];
+  const API_BASE = "https://meuturno-notifications.onrender.com";
+  const VAPID_KEY = "BDd0_9lubI0cQ2dEbfiCM40GLq5HkkGa9e6FPbIZ4UCR5ClbPyeiJ2eZD_u1PhZXcjeCRJSFhH8MdOkgvNjxvj8";
+  
+  let currentUser = null, userRole = null, isAdmin = false, linksDB = {}, filtroGestao = "pendente";
+
+  const limiteData = new Date();
+  limiteData.setDate(limiteData.getDate() - 60);
+
+  // --- CONTROLO DO TEMA (DARK/LIGHT MODE) ---
+  const themeToggle = document.getElementById('theme-toggle');
+  
+  function updateThemeIcon() {
+      if (document.documentElement.classList.contains('dark-mode')) {
+          themeToggle.textContent = 'light_mode';
+          themeToggle.style.color = '#FFD700'; 
+      } else {
+          themeToggle.textContent = 'dark_mode';
+          themeToggle.style.color = 'white'; 
+      }
+  }
+  
+  updateThemeIcon(); 
+
+  themeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark-mode');
+      if (document.documentElement.classList.contains('dark-mode')) {
+          localStorage.setItem('theme', 'dark');
+      } else {
+          localStorage.setItem('theme', 'light');
+      }
+      updateThemeIcon();
+      themeToggle.style.transform = 'rotate(360deg)';
+      setTimeout(() => themeToggle.style.transform = 'none', 300);
+  });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./firebase-messaging-sw.js').catch(e => console.error("SW Erro:", e));
+  }
+
+  function atualizarIconeSino() {
+      const bell = document.getElementById("header-bell");
+      if (!('Notification' in window)) { bell.style.display = 'none'; return; }
+      
+      if (Notification.permission === "granted") {
+          bell.innerText = "notifications_active"; bell.title = "Notificações Ativas";
+      } else {
+          bell.innerText = "notifications_off"; bell.title = "Notificações Desativadas";
+      }
+  }
+
+  async function pedirNotificacoes() {
+    if (!('Notification' in window)) return;
+    try {
+      const perm = await Notification.requestPermission();
+      atualizarIconeSino();
+      if (perm === 'granted') {
+        const reg = await navigator.serviceWorker.ready;
+        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+        if (token) {
+          await setDoc(doc(db, 'Utilizadores', currentUser.uid, 'tokens', token), { token: token, updatedAt: serverTimestamp() }, { merge: true });
+        }
+      } else if (perm === 'denied') {
+        alert("Bloqueou as notificações. Vá às definições do browser ou toque no 'Cadeado' na barra de endereço para reverter.");
+      }
+    } catch(e) { console.error("Erro push:", e); }
+  }
+
+  function gerirAvisoNotificacoes() {
+      if (!('Notification' in window)) return;
+      atualizarIconeSino();
+      if (Notification.permission === "default") {
+          const lastAsked = localStorage.getItem('notif_last_asked');
+          const now = new Date().getTime();
+          if (!lastAsked || (now - parseInt(lastAsked)) > (3 * 24 * 60 * 60 * 1000)) {
+              document.getElementById("modal-notificacoes").classList.remove("hidden");
+          }
+      } else if (Notification.permission === "granted") {
+          pedirNotificacoes();
+      }
+  }
+
+  document.getElementById("btn-ativar-notif").onclick = async () => {
+      document.getElementById("modal-notificacoes").classList.add("hidden");
+      await pedirNotificacoes();
+  };
+  document.getElementById("btn-mais-tarde").onclick = () => {
+      localStorage.setItem('notif_last_asked', new Date().getTime());
+      document.getElementById("modal-notificacoes").classList.add("hidden");
+  };
+  document.getElementById("header-bell").onclick = async () => {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === "default") await pedirNotificacoes();
+      else if (Notification.permission === "denied") alert("As notificações estão bloqueadas. Toque no Cadeado na barra de endereço para ativar.");
+      else alert("As suas notificações já estão ativas!");
+  };
+
+  function setViewer(divId, dlId, rawUrl) {
+    const wrapper = document.getElementById(divId);
+    if (!wrapper) return;
+    if (!rawUrl) { wrapper.innerHTML = "<div class='empty-state'><span class='material-symbols-rounded'>description</span>Documento não disponível.</div>"; return; }
+    let url = rawUrl;
+    if (url.includes("src=")) { const match = url.match(/src=["']([^"']+)["']/); if (match) url = match[1]; } 
+    else { url = url.split('"')[0].split(' ')[0]; }
+    url = url.trim();
+
+    let embedUrl = url.split('?')[0] + "?action=embedview";
+    let dlUrl = url.split('?')[0] + "?download=1";
+
+    const btnDl = document.getElementById(dlId);
+    if (btnDl) { btnDl.href = dlUrl; btnDl.setAttribute("target", "_blank"); }
+    wrapper.innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      isAdmin = ADMINS.includes(user.email);
+      document.getElementById("login-screen").classList.add("hidden");
+      document.getElementById("app-screen").classList.remove("hidden");
+      document.getElementById("header-nome").textContent = user.email.split("@")[0];
+
+      if (isAdmin) {
+          document.getElementById("admin-tag").classList.remove("hidden");
+          document.getElementById("nav-gestao").classList.remove("hidden");
+          document.getElementById("btn-novo-aviso").classList.remove("hidden");
+          carregarGestao();
+      } else {
+          document.getElementById("admin-tag").classList.add("hidden");
+          document.getElementById("nav-gestao").classList.add("hidden");
+          document.getElementById("btn-novo-aviso").classList.add("hidden");
+      }
+
+      const p = await getDoc(doc(db, "Utilizadores", user.uid));
+      if (p.exists()) { userRole = p.data().role; carregarColegasRole(); }
+
+      onSnapshot(doc(db, "Config", "links_v2"), snap => {
+        if (snap.exists()) {
+          linksDB = snap.data();
+          setViewer("div-tec", "dl-tec", linksDB.horario_tecnicos_atual);
+          setViewer("div-med", "dl-med", linksDB.horario_medicos_atual);
+          setViewer("div-oncall", "dl-oncall", linksDB.oncall);
+          setViewer("div-tel", "dl-tel", linksDB["lista telefonica"]); 
+        }
+      });
+
+      carregarAvisos();
+      carregarMeusPedidos();
+      setTimeout(gerirAvisoNotificacoes, 2000); 
+
+    } else {
+      document.getElementById("app-screen").classList.add("hidden");
+      document.getElementById("login-screen").classList.remove("hidden");
+    }
+  });
+
+  function carregarGestao() {
+    const q = query(collection(db, "Pedidos"), where("status", "==", filtroGestao), where("createdAt", ">=", limiteData), orderBy("createdAt", "desc"));
+    onSnapshot(q, snap => {
+        const div = document.getElementById("lista-gestao");
+        div.innerHTML = snap.empty ? `<div class='empty-state'><span class='material-symbols-rounded'>task</span>Nenhum pedido em estado pendente.</div>` : "";
+        snap.forEach(d => {
+            const p = d.data();
+            const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Agora";
+            const card = document.createElement("div"); card.className = `card card-${p.status}`;
+            card.innerHTML = `
+                <div class="pedido-header">
+                    <span class="material-symbols-rounded">person</span> ${p.nome} 
+                    <span class="material-symbols-rounded" style="color:var(--text-muted); font-size: 14px;">arrow_forward</span> ${p.colega_nome}
+                </div>
+                <div class="pedido-corpo">
+                    <span class="material-symbols-rounded">update</span> <strong>${p.meuTurno}</strong> 
+                    <span class="material-symbols-rounded" style="color:var(--text-muted);">sync_alt</span> <strong>${p.turnoPretendido}</strong>
+                </div>
+                ${p.descricao ? `<div class="pedido-obs"><span class="material-symbols-rounded">chat</span> <span>${p.descricao}</span></div>` : ""}
+                <div class="pedido-footer">
+                    <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size: 14px;">calendar_today</span> ${dataStr}</span>
+                    <span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span>
+                </div>
+                ${p.status === 'pendente' ? `<div style="display:flex; gap:10px; margin-top:12px;">
+                    <button onclick="window.decidir(this, '${d.id}', 'aprovado')" style="flex:1; padding:8px; border:none; background:#d1e7dd; color:#0f5132; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:16px;">thumb_up</span> APROVAR</button>
+                    <button onclick="window.decidir(this, '${d.id}', 'reprovado')" style="flex:1; padding:8px; border:none; background:#f8d7da; color:#842029; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:16px;">thumb_down</span> REPROVAR</button>
+                </div>` : ""}
+            `;
+            div.appendChild(card);
+        });
+    });
+  }
+
+  document.querySelectorAll(".btn-filter").forEach(btn => {
+      btn.addEventListener("click", () => {
+          document.querySelectorAll(".btn-filter").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          filtroGestao = btn.dataset.f;
+          carregarGestao();
+      });
+  });
+
+  window.decidir = async (btn, id, s) => { 
+      if(confirm(`Confirmar ação: ${s.toUpperCase()}?`)) {
+          btn.disabled = true;
+          await updateDoc(doc(db, "Pedidos", id), { status: s });
+          getDoc(doc(db, "Pedidos", id)).then(p => {
+              if(p.exists()) fetch(`${API_BASE}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: p.data().email, status: s }) }).catch(e => {});
+          });
+      }
+  };
+
+  function carregarMeusPedidos() {
+    const q = query(collection(db, "Pedidos"), where("uid", "==", currentUser.uid), where("createdAt", ">=", limiteData), orderBy("createdAt", "desc"));
+    onSnapshot(q, snap => {
+        const div = document.getElementById("meus-pedidos");
+        div.innerHTML = snap.empty ? "<div class='empty-state'><span class='material-symbols-rounded'>inbox</span>Nenhum pedido efetuado recentemente.</div>" : "";
+        snap.forEach(d => {
+            const p = d.data();
+            const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Recente";
+            div.innerHTML += `
+                <div class="card card-${p.status}">
+                    <div class="pedido-header"><span class="material-symbols-rounded">person</span> Para: ${p.colega_nome}</div>
+                    <div class="pedido-corpo">
+                        <span class="material-symbols-rounded">update</span> <strong>${p.meuTurno}</strong> 
+                        <span class="material-symbols-rounded" style="color:var(--text-muted); font-size:14px;">arrow_forward</span> <strong>${p.turnoPretendido}</strong>
+                    </div>
+                    <div class="pedido-footer">
+                        <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size:14px;">calendar_today</span> ${dataStr}</span>
+                        <span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span>
+                    </div>
+                </div>`;
+        });
+    });
+  }
+
+  async function carregarColegasRole() {
+      const q = query(collection(db, "Utilizadores"), where("role", "==", userRole));
+      const snap = await getDocs(q);
+      const sel = document.getElementById("p-colega-select");
+      sel.innerHTML = '<option value="">-- Seleciona colega --</option>';
+      snap.forEach(d => {
+          if (d.data().email !== currentUser.email) {
+              const opt = document.createElement("option"); opt.value = d.data().email; opt.dataset.nome = d.data().nome; opt.textContent = d.data().nome;
+              sel.appendChild(opt);
+          }
+      });
+  }
+
+  const formatarParaDB = (data, periodo) => {
+      if(!data) return periodo; const d = new Date(data + "T00:00:00");
+      return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" }) + ", " + periodo;
+  };
+
+  document.getElementById("btn-enviar-pedido").onclick = async function() {
+      const btn = this; const msg = document.getElementById("pedido-msg");
+      const colega = document.getElementById("p-colega-select");
+      const meuD = document.getElementById("p-meu-data").value; const meuP = document.getElementById("p-meu-periodo").value;
+      const pretD = document.getElementById("p-pret-data").value; const pretP = document.getElementById("p-pret-periodo").value;
+      const obs = document.getElementById("p-motivo").value;
+      
+      if(!colega.value || !meuD || !pretD || !meuP || !pretP) { 
+          msg.innerHTML = "<span class='material-symbols-rounded' style='color:#e74c3c;'>error</span> <span style='color:#e74c3c;'>Preencha todas as datas.</span>"; 
+          return; 
+      }
+
+      btn.disabled = true; btn.innerHTML = "<span class='material-symbols-rounded'>hourglass_empty</span> A aguardar...";
+      try {
+          const meuTurnoFinal = formatarParaDB(meuD, meuP);
+          const turnoPretendidoFinal = formatarParaDB(pretD, pretP);
+
+          const docRef = await addDoc(collection(db, "Pedidos"), {
+              uid: currentUser.uid, nome: currentUser.email.split("@")[0], email: currentUser.email,
+              meuTurno: meuTurnoFinal, turnoPretendido: turnoPretendidoFinal, 
+              colega_email: colega.value, colega_nome: colega.options[colega.selectedIndex].dataset.nome,
+              descricao: obs, status: "pendente", role: userRole, createdAt: serverTimestamp()
+          });
+          
+          msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Pedido registado!</span>";
+          document.getElementById("p-meu-periodo").value = ""; document.getElementById("p-pret-periodo").value = ""; document.getElementById("p-motivo").value = "";
+          btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido";
+
+          emailjs.send("service_ypyd6nc", "template_r12r1qi", { from_name: currentUser.email, meu_turno: meuTurnoFinal, pedido_id: docRef.id }).catch(e => {});
+          fetch(`${API_BASE}/pedido`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome: currentUser.email.split("@")[0], colega_email: colega.value }) }).catch(e => {});
+      } catch(e) { 
+          msg.innerHTML = "<span class='material-symbols-rounded' style='color:#e74c3c;'>cloud_off</span> <span style='color:#e74c3c;'>Erro na comunicação.</span>"; 
+          btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido"; 
+      }
+  };
+
+  function carregarAvisos() {
+    const q = query(collection(db, "Avisos"), where("createdAt", ">=", limiteData), orderBy("createdAt", "desc"));
+    onSnapshot(q, snap => {
+        const div = document.getElementById("lista-avisos");
+        div.innerHTML = snap.empty ? `<div class='empty-state'><span class='material-symbols-rounded'>campaign</span>Sem avisos recentes.</div>` : "";
+        snap.forEach(d => {
+            const a = d.data();
+            const dataAviso = a.createdAt ? new Date(a.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "";
+            const card = document.createElement("div"); card.className = "card"; card.style.borderLeftColor = "var(--primary)";
+            card.innerHTML = `
+                <div class="aviso-item-header">
+                    <span class="aviso-item-autor"><span class="material-symbols-rounded">person</span> ${a.autor}</span>
+                    <span class="aviso-item-data"><span class="material-symbols-rounded" style="font-size: 14px;">calendar_today</span> ${dataAviso}</span>
+                </div>
+                <div style="font-size:14px; margin:12px 0; white-space:pre-wrap;">${a.texto}</div>
+                <div style="display:flex; gap:15px; align-items:center; margin-top:10px;">
+                    <button onclick="window.confirmarLeitura('${d.id}')" class="aviso-item-btn"><span class="material-symbols-rounded" style="font-size:16px;">check_circle</span> Confirmar</button>
+                    ${isAdmin ? `<button onclick="window.verQuemViu('${d.id}')" class="aviso-item-btn-text" style="color:var(--secondary);"><span class="material-symbols-rounded" style="font-size:16px;">visibility</span> Confirmados</button>` : ""}
+                    ${isAdmin ? `<button onclick="window.apagarAviso('${d.id}')" class="aviso-item-btn-text" style="color:#e74c3c;"><span class="material-symbols-rounded" style="font-size:20px;">delete</span></button>` : ""}
+                </div>`;
+            div.appendChild(card);
+        });
+    });
+  }
+
+  document.getElementById("btn-novo-aviso").addEventListener("click", () => document.getElementById("modal-aviso").classList.remove("hidden"));
+  document.getElementById("btn-publicar").addEventListener("click", async function() {
+      const btn = this; const txt = document.getElementById("aviso-texto").value;
+      if(!txt) return;
+      btn.disabled = true;
+
+      await addDoc(collection(db, "Avisos"), { texto: txt, autor: currentUser.email.split("@")[0], createdAt: serverTimestamp() });
+      
+      document.getElementById("modal-aviso").classList.add("hidden"); document.getElementById("aviso-texto").value = ""; btn.disabled = false;
+      fetch(`${API_BASE}/aviso`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titulo: "Novo Aviso - Radiologia", texto: txt }) }).catch(e => {});
+  });
+
+  window.verQuemViu = async (id) => {
+      const snap = await getDocs(collection(db, "Avisos", id, "acknowledgements"));
+      const lista = document.getElementById("lista-vistos");
+      lista.innerHTML = snap.empty ? "<p style='color:var(--text-muted); display:flex; align-items:center; gap:6px;'><span class='material-symbols-rounded'>info</span> Ninguém confirmou ainda.</p>" : "";
+      snap.forEach(d => { lista.innerHTML += `<div style='padding:5px 0; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:6px;'><span class='material-symbols-rounded' style='font-size:14px; color:var(--primary);'>check</span> ${d.data().nome}</div>`; });
+      document.getElementById("modal-vistos").classList.remove("hidden");
+  };
+
+  window.confirmarLeitura = async (id) => { await setDoc(doc(db, "Avisos", id, "acknowledgements", currentUser.uid), { nome: currentUser.email, data: serverTimestamp() }); alert("Leitura confirmada com sucesso."); };
+  window.apagarAviso = async (id) => { if(confirm("Tem a certeza que quer apagar este aviso?")) await deleteDoc(doc(db, "Avisos", id)); };
+
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+          document.querySelectorAll(".tab-content").forEach(t => t.classList.add("hidden"));
+          document.querySelectorAll(".nav-btn").forEach(n => n.classList.remove("active"));
+          document.getElementById("tab-" + btn.dataset.tab).classList.remove("hidden");
+          btn.classList.add("active");
+      });
+  });
+
+  const updateVisual = (a, i) => { a.classList.replace('inactive', 'active'); i.classList.replace('active', 'inactive'); };
+  
+  document.getElementById("btn-tec-atual").onclick = () => { updateVisual(document.getElementById("btn-tec-atual"), document.getElementById("btn-tec-prox")); setViewer("div-tec", "dl-tec", linksDB.horario_tecnicos_atual); };
+  document.getElementById("btn-tec-prox").onclick = () => { updateVisual(document.getElementById("btn-tec-prox"), document.getElementById("btn-tec-atual")); setViewer("div-tec", "dl-tec", linksDB.horario_tecnicos_proximo); };
+  document.getElementById("btn-med-atual").onclick = () => { updateVisual(document.getElementById("btn-med-atual"), document.getElementById("btn-med-prox")); setViewer("div-med", "dl-med", linksDB.horario_medicos_atual); };
+  document.getElementById("btn-med-prox").onclick = () => { updateVisual(document.getElementById("btn-med-prox"), document.getElementById("btn-med-atual")); setViewer("div-med", "dl-med", linksDB.horario_medicos_proximo); };
+
+  document.getElementById("btn-login").onclick = async () => {
+      const btn = document.getElementById("btn-login");
+      const err = document.getElementById("login-error");
+      const u = document.getElementById("login-email").value.trim();
+      const p = document.getElementById("login-pass").value;
+
+      if(!u || !p) { err.innerHTML = "<span class='material-symbols-rounded' style='font-size:16px;'>error</span> Preencha todos os campos."; return; }
+      btn.disabled = true; btn.innerHTML = "<span class='material-symbols-rounded'>hourglass_empty</span> A verificar..."; err.innerHTML = "";
+
+      try {
+          await signInWithEmailAndPassword(auth, u.includes("@") ? u : u + "@imagiologia.local", p);
+      } catch(e) {
+          err.innerHTML = "<span class='material-symbols-rounded' style='font-size:16px;'>error</span> Credenciais inválidas.";
+          btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded'>login</span> ENTRAR";
+      }
+  };
+
+  document.getElementById("btn-forgot").onclick = () => {
+      const email = document.getElementById("login-email").value.trim();
+      if(!email || !email.includes("@")) { alert("Por favor, digite o seu e-mail na caixa acima e clique novamente em 'Esqueci-me da password'."); return; }
+      sendPasswordResetEmail(auth, email).then(() => alert("Link enviado! Verifique o seu email para redefinir a palavra-passe.")).catch(err => alert("Erro ao enviar email. Verifique o endereço."));
+  };
+  
+  document.getElementById("btn-logout").onclick = () => { signOut(auth).then(() => window.location.reload()); };
+
+</script>
+</body>
+</html>
