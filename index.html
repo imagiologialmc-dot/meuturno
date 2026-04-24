@@ -24,7 +24,6 @@
   </script>
 
   <style>
-    /* VARIÁVEIS BASE (MODO CLARO - ALIVA BRANDING) */
     :root { 
       --primary: #2AA8A8; 
       --secondary: #2D6E8E; 
@@ -39,7 +38,6 @@
       --login-grad-2: #2D6E8E;
     }
 
-    /* MODO ESCURO (Android Style) 🌙 */
     :root.dark-mode {
       --bg: #202124;         
       --surface: #292A2D;    
@@ -48,26 +46,17 @@
       --border: #3C4043;     
       --card-shadow: 0 4px 12px rgba(0,0,0,0.3);
       --nav-active: #4DD0E1; 
-      --login-grad-1: #163838; /* Gradiente noturno elegante para o fundo do login */
+      --login-grad-1: #163838; 
       --login-grad-2: #142833;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { width: 100%; height: 100%; }
     
-    body { 
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; 
-        background: var(--bg); 
-        color: var(--text-main); 
-        overflow-x: hidden; 
-        transition: background 0.3s ease, color 0.3s ease; 
-    }
-    
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; background: var(--bg); color: var(--text-main); overflow-x: hidden; transition: background 0.3s ease, color 0.3s ease; }
     .hidden { display: none !important; }
-
     .brand-text { font-family: 'Montserrat', sans-serif; font-weight: 800; letter-spacing: -0.5px; }
     
-    /* LOGIN */
     #login-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 20px; background: linear-gradient(135deg, var(--login-grad-1) 0%, var(--login-grad-2) 100%); overflow: hidden; transition: background 0.3s ease; }
     .logo-anim-container { position: relative; width: 280px; height: 150px; margin-bottom: 10px; display: flex; justify-content: center; align-items: center; }
     .logo-clinic { position: absolute; width: 240px; height: auto; object-fit: contain; animation: clinicPulse 3.5s forwards; }
@@ -83,29 +72,20 @@
     .login-box input { width: 100%; padding: 14px; margin: 8px 0; border-radius: 12px; border: 1.5px solid var(--border); outline: none; text-align: left; font-size: 15px; background: var(--bg); color: var(--text-main); transition: 0.3s; }
     .login-box input:focus { border-color: var(--primary); }
     
-    /* CORREÇÃO DO AUTOFILL NO MODO ESCURO */
-    input:-webkit-autofill,
-    input:-webkit-autofill:hover, 
-    input:-webkit-autofill:focus, 
-    input:-webkit-autofill:active{
-        -webkit-box-shadow: 0 0 0 30px var(--bg) inset !important;
-        -webkit-text-fill-color: var(--text-main) !important;
-        transition: background-color 5000s ease-in-out 0s;
+    input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active{
+        -webkit-box-shadow: 0 0 0 30px var(--bg) inset !important; -webkit-text-fill-color: var(--text-main) !important; transition: background-color 5000s ease-in-out 0s;
     }
     
     .btn-main { width: 100%; padding: 15px; background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 15px; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
     .btn-main:disabled { background: #888; cursor: not-allowed; opacity: 0.7; }
     #btn-forgot { margin-top: 15px; font-size: 13px; color: rgba(255,255,255,0.9); text-decoration: underline; cursor: pointer; display: inline-block; }
 
-    /* HEADER */
     .app-header { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     .btn-logout { background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 20px; font-size: 11px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
 
-    /* CONTEÚDO TABS */
     .tab-content { padding: 12px; padding-bottom: 90px; }
     .section-title { font-size: 18px; font-weight: 700; color: var(--primary); margin: 15px 0; display: flex; align-items: center; gap: 8px; }
 
-    /* BOTÕES MÊS & FILTROS */
     .toggle-container { display: flex; gap: 8px; margin-bottom: 15px; }
     .btn-toggle { flex: 1; padding: 10px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.3s ease; border: 2px solid var(--primary); }
     .btn-toggle.active { background: var(--primary); color: white; }
@@ -118,7 +98,6 @@
     .btn-filter.active[data-f="aprovado"] { background: var(--primary); color: white; border-color: var(--primary); }
     .btn-filter.active[data-f="reprovado"] { background: #f8d7da; color: #842029; border-color: #f5c6cb; }
 
-    /* CARDS */
     .viewer-card { background: var(--surface); border-radius: 12px; overflow: hidden; box-shadow: var(--card-shadow); margin-bottom: 16px; border: 1px solid var(--border); transition: background 0.3s; }
     .viewer-actions { display: flex; background: var(--bg); border-bottom: 1px solid var(--border); transition: background 0.3s; }
     .btn-action { flex: 1; padding: 14px; text-align: center; text-decoration: none; color: var(--primary); font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: background 0.2s; }
@@ -151,14 +130,12 @@
     .status-aprovado { background: #d1e7dd; color: #0f5132; }
     .status-reprovado { background: #f8d7da; color: #842029; }
 
-    /* NAVEGAÇÃO */
     .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); display: flex; border-top: 1px solid var(--border); z-index: 100; overflow-x: auto; padding-bottom: env(safe-area-inset-bottom); transition: background 0.3s; }
     .nav-btn { flex: 1; min-width: 62px; padding: 10px 2px 8px 2px; border: none; background: none; color: var(--text-muted); font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; transition: color 0.2s; }
     .nav-btn .icon { font-size: 24px; transition: transform 0.2s; font-variation-settings: 'FILL' 0; }
     .nav-btn.active { color: var(--nav-active); font-weight: 700; }
     .nav-btn.active .icon { font-variation-settings: 'FILL' 1; transform: scale(1.1); }
 
-    /* MODAIS */
     .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
     
     .aviso-item-header { display:flex; justify-content:space-between; align-items:center; }
@@ -168,7 +145,6 @@
     .aviso-item-btn:hover { background: var(--primary); color: white; }
     .aviso-item-btn-text { font-size:12px; color:var(--secondary); font-weight:bold; border:none; background:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; }
     
-    /* EMPTY STATES */
     .empty-state { padding: 40px 20px; text-align: center; color: var(--text-muted); font-size: 14px; }
     .empty-state .material-symbols-rounded { font-size: 48px; color: var(--border); margin-bottom: 10px; display: block; }
   </style>
@@ -305,17 +281,19 @@
     <button class="nav-btn" data-tab="medicos"><span class="material-symbols-rounded icon">stethoscope</span>Médicos</button>
     <button class="nav-btn" data-tab="oncall"><span class="material-symbols-rounded icon">emergency</span>Oncall</button>
     <button class="nav-btn" data-tab="telefones"><span class="material-symbols-rounded icon">contact_phone</span>Lista</button>
-    <button class="nav-btn" data-tab="pedidos"><span class="material-symbols-rounded icon">sync_alt</span>Trocas</button>
+    
+    <button id="nav-pedidos" class="nav-btn" data-tab="pedidos"><span class="material-symbols-rounded icon">sync_alt</span>Trocas</button>
+    
     <button id="nav-gestao" class="nav-btn hidden" data-tab="gestao"><span class="material-symbols-rounded icon">settings</span>Gestão</button>
   </nav>
 </div>
 
 <div id="modal-notificacoes" class="modal-overlay hidden">
     <div class="login-box" style="padding: 25px;">
-        <h3 class="brand-text" style="color:var(--primary); font-size:20px; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <h3 id="notif-title" class="brand-text" style="color:var(--primary); font-size:20px; display:flex; align-items:center; justify-content:center; gap:8px;">
             <span class="material-symbols-rounded">notifications_active</span> Ativar Alertas
         </h3>
-        <p style="font-size:14px; color:var(--text-muted); margin:15px 0;">Para seres avisado(a) sempre que tiveres uma nova troca de turno ou aviso da coordenação, ativa as notificações.</p>
+        <p id="notif-desc" style="font-size:14px; color:var(--text-muted); margin:15px 0;">A analisar perfil...</p>
         <button id="btn-ativar-notif" class="btn-main" style="margin-bottom:10px;"><span class="material-symbols-rounded" style="font-size: 18px;">check</span> Ativar Notificações</button>
         <button id="btn-mais-tarde" style="width:100%; padding:10px; background:none; border:none; color:var(--text-muted); font-weight:bold; cursor:pointer;">Mais Tarde</button>
     </div>
@@ -382,7 +360,6 @@
   const limiteData = new Date();
   limiteData.setDate(limiteData.getDate() - 60);
 
-  // --- CONTROLO DO TEMA (DARK/LIGHT MODE) ---
   const themeToggle = document.getElementById('theme-toggle');
   
   function updateThemeIcon() {
@@ -394,7 +371,6 @@
           themeToggle.style.color = 'white'; 
       }
   }
-  
   updateThemeIcon(); 
 
   themeToggle.addEventListener('click', () => {
@@ -416,7 +392,6 @@
   function atualizarIconeSino() {
       const bell = document.getElementById("header-bell");
       if (!('Notification' in window)) { bell.style.display = 'none'; return; }
-      
       if (Notification.permission === "granted") {
           bell.innerText = "notifications_active"; bell.title = "Notificações Ativas";
       } else {
@@ -435,8 +410,6 @@
         if (token) {
           await setDoc(doc(db, 'Utilizadores', currentUser.uid, 'tokens', token), { token: token, updatedAt: serverTimestamp() }, { merge: true });
         }
-      } else if (perm === 'denied') {
-        alert("Bloqueou as notificações. Vá às definições do browser ou toque no 'Cadeado' na barra de endereço para reverter.");
       }
     } catch(e) { console.error("Erro push:", e); }
   }
@@ -444,25 +417,65 @@
   function gerirAvisoNotificacoes() {
       if (!('Notification' in window)) return;
       atualizarIconeSino();
+
+      const isOptional = (userRole === 'administracao' || userRole === 'medico' || userRole === 'recepcao');
+      
+      const modal = document.getElementById("modal-notificacoes");
+      const btnAtiv = document.getElementById("btn-ativar-notif");
+      const btnMais = document.getElementById("btn-mais-tarde");
+      const title = document.getElementById("notif-title");
+      const desc = document.getElementById("notif-desc");
+
       if (Notification.permission === "default") {
-          const lastAsked = localStorage.getItem('notif_last_asked');
-          const now = new Date().getTime();
-          if (!lastAsked || (now - parseInt(lastAsked)) > (3 * 24 * 60 * 60 * 1000)) {
-              document.getElementById("modal-notificacoes").classList.remove("hidden");
+          if (isOptional) {
+              const neverAsk = localStorage.getItem('notif_never_ask');
+              if (!neverAsk) {
+                  title.innerHTML = `<span class="material-symbols-rounded">notifications</span> Ativar Alertas`;
+                  desc.innerText = "Para seres avisado(a) sempre que houver um novo aviso, podes ativar as notificações.";
+                  btnMais.style.display = "block";
+                  btnMais.innerText = "Não voltar a perguntar"; 
+                  modal.classList.remove("hidden");
+              }
+          } else {
+              const sessionDismissed = sessionStorage.getItem('notif_session_dismissed');
+              if (!sessionDismissed) {
+                  title.innerHTML = `<span class="material-symbols-rounded">warning</span> Alertas Importantes`;
+                  desc.innerHTML = "Para o teu perfil técnico, as notificações são fundamentais para garantir a comunicação de escalas e trocas.";
+                  btnMais.style.display = "block";
+                  btnMais.innerText = "Lembrar mais tarde"; 
+                  modal.classList.remove("hidden");
+              }
           }
+      } else if (Notification.permission === "denied" && !isOptional) {
+          title.innerHTML = `<span class="material-symbols-rounded" style="color:#e74c3c;">error</span> Alertas Bloqueados`;
+          desc.innerHTML = "As notificações são obrigatórias para o teu perfil. <br><br><b>Como resolver:</b> Toque no cadeado (🔒) na barra de endereço lá em cima, vá a 'Permissões', permita as Notificações e clique no botão abaixo.";
+          btnAtiv.innerHTML = `<span class="material-symbols-rounded" style="font-size: 18px;">refresh</span> Já Desbloqueei`;
+          btnMais.style.display = "none";
+          modal.classList.remove("hidden");
       } else if (Notification.permission === "granted") {
           pedirNotificacoes();
       }
   }
 
   document.getElementById("btn-ativar-notif").onclick = async () => {
-      document.getElementById("modal-notificacoes").classList.add("hidden");
-      await pedirNotificacoes();
+      if (Notification.permission === "denied") {
+          window.location.reload(); 
+      } else {
+          document.getElementById("modal-notificacoes").classList.add("hidden");
+          await pedirNotificacoes();
+          setTimeout(gerirAvisoNotificacoes, 500); 
+      }
   };
+
   document.getElementById("btn-mais-tarde").onclick = () => {
-      localStorage.setItem('notif_last_asked', new Date().getTime());
+      if (userRole === 'administracao' || userRole === 'medico' || userRole === 'recepcao') {
+          localStorage.setItem('notif_never_ask', 'true'); 
+      } else {
+          sessionStorage.setItem('notif_session_dismissed', 'true'); 
+      }
       document.getElementById("modal-notificacoes").classList.add("hidden");
   };
+
   document.getElementById("header-bell").onclick = async () => {
       if (!('Notification' in window)) return;
       if (Notification.permission === "default") await pedirNotificacoes();
@@ -507,7 +520,19 @@
       }
 
       const p = await getDoc(doc(db, "Utilizadores", user.uid));
-      if (p.exists()) { userRole = p.data().role; carregarColegasRole(); }
+      if (p.exists()) { 
+          userRole = p.data().role; 
+          
+          if (userRole === 'recepcao') {
+              document.getElementById("nav-pedidos").classList.add("hidden");
+          } else {
+              document.getElementById("nav-pedidos").classList.remove("hidden");
+          }
+
+          carregarColegasRole(); 
+      }
+      
+      setTimeout(gerirAvisoNotificacoes, 1000); 
 
       onSnapshot(doc(db, "Config", "links_v2"), snap => {
         if (snap.exists()) {
@@ -521,7 +546,6 @@
 
       carregarAvisos();
       carregarMeusPedidos();
-      setTimeout(gerirAvisoNotificacoes, 2000); 
 
     } else {
       document.getElementById("app-screen").classList.add("hidden");
@@ -668,6 +692,7 @@
             const a = d.data();
             const dataAviso = a.createdAt ? new Date(a.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "";
             const card = document.createElement("div"); card.className = "card"; card.style.borderLeftColor = "var(--primary)";
+            
             card.innerHTML = `
                 <div class="aviso-item-header">
                     <span class="aviso-item-autor"><span class="material-symbols-rounded">person</span> ${a.autor}</span>
@@ -675,14 +700,44 @@
                 </div>
                 <div style="font-size:14px; margin:12px 0; white-space:pre-wrap;">${a.texto}</div>
                 <div style="display:flex; gap:15px; align-items:center; margin-top:10px;">
-                    <button onclick="window.confirmarLeitura('${d.id}')" class="aviso-item-btn"><span class="material-symbols-rounded" style="font-size:16px;">check_circle</span> Confirmar</button>
-                    ${isAdmin ? `<button onclick="window.verQuemViu('${d.id}')" class="aviso-item-btn-text" style="color:var(--secondary);"><span class="material-symbols-rounded" style="font-size:16px;">visibility</span> Confirmados</button>` : ""}
+                    <button id="btn-conf-${d.id}" onclick="window.confirmarLeitura(this, '${d.id}')" class="aviso-item-btn"><span class="material-symbols-rounded" style="font-size:16px;">check_circle</span> Confirmar</button>
+                    ${isAdmin ? `<button onclick="window.verQuemViu('${d.id}')" class="aviso-item-btn-text" style="color:var(--secondary);"><span class="material-symbols-rounded" style="font-size:16px;">visibility</span> <span id="count-${d.id}">0</span> Confirmados</button>` : ""}
                     ${isAdmin ? `<button onclick="window.apagarAviso('${d.id}')" class="aviso-item-btn-text" style="color:#e74c3c;"><span class="material-symbols-rounded" style="font-size:20px;">delete</span></button>` : ""}
                 </div>`;
             div.appendChild(card);
+
+            getDoc(doc(db, "Avisos", d.id, "acknowledgements", currentUser.uid)).then(ack => {
+                if(ack.exists()) {
+                    const btn = document.getElementById(`btn-conf-${d.id}`);
+                    if(btn) {
+                        btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:16px;">done_all</span> Lido`;
+                        btn.disabled = true;
+                        btn.style.borderColor = "var(--border)";
+                        btn.style.color = "var(--text-muted)";
+                        btn.style.cursor = "default";
+                    }
+                }
+            });
+
+            if(isAdmin) {
+                onSnapshot(collection(db, "Avisos", d.id, "acknowledgements"), (ackSnap) => {
+                    const countSpan = document.getElementById(`count-${d.id}`);
+                    if (countSpan) countSpan.innerText = ackSnap.size;
+                });
+            }
         });
     });
   }
+
+  window.confirmarLeitura = async (btn, id) => {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:16px;">hourglass_empty</span> ...`;
+      await setDoc(doc(db, "Avisos", id, "acknowledgements", currentUser.uid), { nome: currentUser.email, data: serverTimestamp() }); 
+      btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:16px;">done_all</span> Lido`;
+      btn.style.borderColor = "var(--border)";
+      btn.style.color = "var(--text-muted)";
+      btn.style.cursor = "default";
+  };
 
   document.getElementById("btn-novo-aviso").addEventListener("click", () => document.getElementById("modal-aviso").classList.remove("hidden"));
   document.getElementById("btn-publicar").addEventListener("click", async function() {
@@ -704,7 +759,6 @@
       document.getElementById("modal-vistos").classList.remove("hidden");
   };
 
-  window.confirmarLeitura = async (id) => { await setDoc(doc(db, "Avisos", id, "acknowledgements", currentUser.uid), { nome: currentUser.email, data: serverTimestamp() }); alert("Leitura confirmada com sucesso."); };
   window.apagarAviso = async (id) => { if(confirm("Tem a certeza que quer apagar este aviso?")) await deleteDoc(doc(db, "Avisos", id)); };
 
   document.querySelectorAll(".nav-btn").forEach(btn => {
