@@ -6,28 +6,30 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// INICIALIZAÇÃO SEGURA
+let db;
+
 try {
   const saRaw = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!saRaw) throw new Error("Variável FIREBASE_SERVICE_ACCOUNT não encontrada!");
+  if (!saRaw) throw new Error("Falta variável de ambiente");
 
-  // Corrige quebras de linha e limpa espaços extras
-  const saClean = saRaw.trim().replace(/\\n/g, '\n');
+  // Remove quebras de linha reais e limpa a string
+  const saClean = saRaw.replace(/[\r\n]+/g, " ").trim();
   const serviceAccount = JSON.parse(saClean);
 
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
-  console.log("✅ Conectado ao Firebase com sucesso!");
+  
+  db = admin.firestore();
+  console.log("✅ Conectado ao Firebase!");
 } catch (e) {
-  console.error("❌ ERRO CRÍTICO NO FIREBASE:", e.message);
+  console.error("❌ Erro no Firebase:", e.message);
 }
 
-const db = admin.firestore();
-
-app.get('/', (req, res) => res.send('Servidor Ativo!'));
+app.get('/', (req, res) => res.send('Servidor Online'));
 
 app.post('/pedido', async (req, res) => {
+  if (!db) return res.status(500).send("Firebase não inicializado");
   try {
     const { nome, colega_email } = req.body;
     const userSnap = await db.collection('Utilizadores').where('email', '==', colega_email).get();
@@ -37,17 +39,18 @@ app.post('/pedido', async (req, res) => {
     const tokens = [];
     tokensSnap.forEach(t => tokens.push(t.data().token));
 
-    if (tokens.length === 0) return res.send('Sem dispositivos');
-
-    await admin.messaging().sendEachForMulticast({
-      notification: { title: 'Nova Troca 🔄', body: `${nome} pediu uma troca.` },
-      tokens: tokens
-    });
-    res.send('Notificado');
+    if (tokens.length > 0) {
+      await admin.messaging().sendEachForMulticast({
+        notification: { title: 'Nova Troca 🔄', body: `${nome} pediu uma troca.` },
+        tokens: tokens
+      });
+    }
+    res.send('Processado');
   } catch (err) { res.status(500).send(err.message); }
 });
 
 app.post('/status', async (req, res) => {
+  if (!db) return res.status(500).send("Firebase não inicializado");
   try {
     const { email, status } = req.body;
     const userSnap = await db.collection('Utilizadores').where('email', '==', email).get();
@@ -57,13 +60,15 @@ app.post('/status', async (req, res) => {
     const tokens = [];
     tokensSnap.forEach(t => tokens.push(t.data().token));
 
-    await admin.messaging().sendEachForMulticast({
-      notification: { title: `Troca ${status}`, body: `O teu pedido foi ${status}.` },
-      tokens: tokens
-    });
+    if (tokens.length > 0) {
+      await admin.messaging().sendEachForMulticast({
+        notification: { title: `Troca ${status}`, body: `O teu pedido foi ${status}.` },
+        tokens: tokens
+      });
+    }
     res.send('Status enviado');
   } catch (err) { res.status(500).send(err.message); }
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Porta: ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Online na porta ${PORT}`));
