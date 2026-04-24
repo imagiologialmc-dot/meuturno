@@ -237,6 +237,13 @@
     </div>
   </div>
 
+  <div id="tab-formularios" class="tab-content hidden">
+    <div class="section-title"><span class="material-symbols-rounded">folder_open</span> Formulários QCI</div>
+    <div id="lista-formularios">
+        <div class="empty-state"><span class="material-symbols-rounded">hourglass_empty</span>A carregar...</div>
+    </div>
+  </div>
+
   <div id="tab-pedidos" class="tab-content hidden">
     <div class="section-title"><span class="material-symbols-rounded">swap_horiz</span> Pedido de Troca</div>
     <div class="form-card">
@@ -282,8 +289,9 @@
     <button class="nav-btn" data-tab="oncall"><span class="material-symbols-rounded icon">emergency</span>Oncall</button>
     <button class="nav-btn" data-tab="telefones"><span class="material-symbols-rounded icon">contact_phone</span>Lista</button>
     
+    <button class="nav-btn" data-tab="formularios"><span class="material-symbols-rounded icon">folder_open</span>QCI</button>
+
     <button id="nav-pedidos" class="nav-btn" data-tab="pedidos"><span class="material-symbols-rounded icon">sync_alt</span>Trocas</button>
-    
     <button id="nav-gestao" class="nav-btn hidden" data-tab="gestao"><span class="material-symbols-rounded icon">settings</span>Gestão</button>
   </nav>
 </div>
@@ -356,47 +364,33 @@
   const VAPID_KEY = "BDd0_9lubI0cQ2dEbfiCM40GLq5HkkGa9e6FPbIZ4UCR5ClbPyeiJ2eZD_u1PhZXcjeCRJSFhH8MdOkgvNjxvj8";
   
   let currentUser = null, userRole = null, isAdmin = false, linksDB = {}, filtroGestao = "pendente";
-
   const limiteData = new Date();
   limiteData.setDate(limiteData.getDate() - 60);
 
   const themeToggle = document.getElementById('theme-toggle');
-  
   function updateThemeIcon() {
       if (document.documentElement.classList.contains('dark-mode')) {
-          themeToggle.textContent = 'light_mode';
-          themeToggle.style.color = '#FFD700'; 
+          themeToggle.textContent = 'light_mode'; themeToggle.style.color = '#FFD700'; 
       } else {
-          themeToggle.textContent = 'dark_mode';
-          themeToggle.style.color = 'white'; 
+          themeToggle.textContent = 'dark_mode'; themeToggle.style.color = 'white'; 
       }
   }
   updateThemeIcon(); 
-
   themeToggle.addEventListener('click', () => {
       document.documentElement.classList.toggle('dark-mode');
-      if (document.documentElement.classList.contains('dark-mode')) {
-          localStorage.setItem('theme', 'dark');
-      } else {
-          localStorage.setItem('theme', 'light');
-      }
+      localStorage.setItem('theme', document.documentElement.classList.contains('dark-mode') ? 'dark' : 'light');
       updateThemeIcon();
       themeToggle.style.transform = 'rotate(360deg)';
       setTimeout(() => themeToggle.style.transform = 'none', 300);
   });
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./firebase-messaging-sw.js').catch(e => console.error("SW Erro:", e));
-  }
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./firebase-messaging-sw.js').catch(e => console.error(e));
 
   function atualizarIconeSino() {
       const bell = document.getElementById("header-bell");
       if (!('Notification' in window)) { bell.style.display = 'none'; return; }
-      if (Notification.permission === "granted") {
-          bell.innerText = "notifications_active"; bell.title = "Notificações Ativas";
-      } else {
-          bell.innerText = "notifications_off"; bell.title = "Notificações Desativadas";
-      }
+      if (Notification.permission === "granted") { bell.innerText = "notifications_active"; bell.title = "Ativas"; } 
+      else { bell.innerText = "notifications_off"; bell.title = "Desativadas"; }
   }
 
   async function pedirNotificacoes() {
@@ -407,11 +401,9 @@
       if (perm === 'granted') {
         const reg = await navigator.serviceWorker.ready;
         const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
-        if (token) {
-          await setDoc(doc(db, 'Utilizadores', currentUser.uid, 'tokens', token), { token: token, updatedAt: serverTimestamp() }, { merge: true });
-        }
+        if (token) await setDoc(doc(db, 'Utilizadores', currentUser.uid, 'tokens', token), { token: token, updatedAt: serverTimestamp() }, { merge: true });
       }
-    } catch(e) { console.error("Erro push:", e); }
+    } catch(e) {}
   }
 
   function gerirAvisoNotificacoes() {
@@ -419,7 +411,6 @@
       atualizarIconeSino();
 
       const isOptional = (userRole === 'administracao' || userRole === 'medico' || userRole === 'recepcao');
-      
       const modal = document.getElementById("modal-notificacoes");
       const btnAtiv = document.getElementById("btn-ativar-notif");
       const btnMais = document.getElementById("btn-mais-tarde");
@@ -428,21 +419,17 @@
 
       if (Notification.permission === "default") {
           if (isOptional) {
-              const neverAsk = localStorage.getItem('notif_never_ask');
-              if (!neverAsk) {
+              if (!localStorage.getItem('notif_never_ask')) {
                   title.innerHTML = `<span class="material-symbols-rounded">notifications</span> Ativar Alertas`;
                   desc.innerText = "Para seres avisado(a) sempre que houver um novo aviso, podes ativar as notificações.";
-                  btnMais.style.display = "block";
-                  btnMais.innerText = "Não voltar a perguntar"; 
+                  btnMais.style.display = "block"; btnMais.innerText = "Não voltar a perguntar"; 
                   modal.classList.remove("hidden");
               }
           } else {
-              const sessionDismissed = sessionStorage.getItem('notif_session_dismissed');
-              if (!sessionDismissed) {
+              if (!sessionStorage.getItem('notif_session_dismissed')) {
                   title.innerHTML = `<span class="material-symbols-rounded">warning</span> Alertas Importantes`;
                   desc.innerHTML = "Para o teu perfil técnico, as notificações são fundamentais para garantir a comunicação de escalas e trocas.";
-                  btnMais.style.display = "block";
-                  btnMais.innerText = "Lembrar mais tarde"; 
+                  btnMais.style.display = "block"; btnMais.innerText = "Lembrar mais tarde"; 
                   modal.classList.remove("hidden");
               }
           }
@@ -450,32 +437,21 @@
           title.innerHTML = `<span class="material-symbols-rounded" style="color:#e74c3c;">error</span> Alertas Bloqueados`;
           desc.innerHTML = "As notificações são obrigatórias para o teu perfil. <br><br><b>Como resolver:</b> Toque no cadeado (🔒) na barra de endereço lá em cima, vá a 'Permissões', permita as Notificações e clique no botão abaixo.";
           btnAtiv.innerHTML = `<span class="material-symbols-rounded" style="font-size: 18px;">refresh</span> Já Desbloqueei`;
-          btnMais.style.display = "none";
-          modal.classList.remove("hidden");
+          btnMais.style.display = "none"; modal.classList.remove("hidden");
       } else if (Notification.permission === "granted") {
           pedirNotificacoes();
       }
   }
 
   document.getElementById("btn-ativar-notif").onclick = async () => {
-      if (Notification.permission === "denied") {
-          window.location.reload(); 
-      } else {
-          document.getElementById("modal-notificacoes").classList.add("hidden");
-          await pedirNotificacoes();
-          setTimeout(gerirAvisoNotificacoes, 500); 
-      }
+      if (Notification.permission === "denied") window.location.reload(); 
+      else { document.getElementById("modal-notificacoes").classList.add("hidden"); await pedirNotificacoes(); setTimeout(gerirAvisoNotificacoes, 500); }
   };
-
   document.getElementById("btn-mais-tarde").onclick = () => {
-      if (userRole === 'administracao' || userRole === 'medico' || userRole === 'recepcao') {
-          localStorage.setItem('notif_never_ask', 'true'); 
-      } else {
-          sessionStorage.setItem('notif_session_dismissed', 'true'); 
-      }
+      if (userRole === 'administracao' || userRole === 'medico' || userRole === 'recepcao') localStorage.setItem('notif_never_ask', 'true'); 
+      else sessionStorage.setItem('notif_session_dismissed', 'true'); 
       document.getElementById("modal-notificacoes").classList.add("hidden");
   };
-
   document.getElementById("header-bell").onclick = async () => {
       if (!('Notification' in window)) return;
       if (Notification.permission === "default") await pedirNotificacoes();
@@ -487,11 +463,17 @@
     const wrapper = document.getElementById(divId);
     if (!wrapper) return;
     if (!rawUrl) { wrapper.innerHTML = "<div class='empty-state'><span class='material-symbols-rounded'>description</span>Documento não disponível.</div>"; return; }
+    
     let url = rawUrl;
-    if (url.includes("src=")) { const match = url.match(/src=["']([^"']+)["']/); if (match) url = match[1]; } 
-    else { url = url.split('"')[0].split(' ')[0]; }
+    // EXTRAÇÃO INTELIGENTE DO LINK (Mesmo se colado com iframe/aspas)
+    if (url.includes("src=")) { 
+        const match = url.match(/src=["']([^"']+)["']/); 
+        if (match) url = match[1]; 
+    } else { 
+        url = url.replace(/^["']/, '').split(/["'\s]/)[0]; 
+    }
+    
     url = url.trim();
-
     let embedUrl = url.split('?')[0] + "?action=embedview";
     let dlUrl = url.split('?')[0] + "?download=1";
 
@@ -522,16 +504,10 @@
       const p = await getDoc(doc(db, "Utilizadores", user.uid));
       if (p.exists()) { 
           userRole = p.data().role; 
-          
-          if (userRole === 'recepcao') {
-              document.getElementById("nav-pedidos").classList.add("hidden");
-          } else {
-              document.getElementById("nav-pedidos").classList.remove("hidden");
-          }
-
+          if (userRole === 'recepcao') document.getElementById("nav-pedidos").classList.add("hidden");
+          else document.getElementById("nav-pedidos").classList.remove("hidden");
           carregarColegasRole(); 
       }
-      
       setTimeout(gerirAvisoNotificacoes, 1000); 
 
       onSnapshot(doc(db, "Config", "links_v2"), snap => {
@@ -541,6 +517,51 @@
           setViewer("div-med", "dl-med", linksDB.horario_medicos_atual);
           setViewer("div-oncall", "dl-oncall", linksDB.oncall);
           setViewer("div-tel", "dl-tel", linksDB["lista telefonica"]); 
+
+          // --- MOTOR INTELIGENTE DE FORMULÁRIOS QCI ---
+          const formsDiv = document.getElementById("lista-formularios");
+          formsDiv.innerHTML = "";
+          let hasForms = false;
+          
+          const chavesOrdenadas = Object.keys(linksDB).sort();
+          
+          for (const key of chavesOrdenadas) {
+              const lowerKey = key.toLowerCase();
+              if (lowerKey.startsWith("qci_") || lowerKey.startsWith("qci ")) {
+                  hasForms = true;
+                  
+                  // Limpa a palavra "QCI_" e troca os _ por espaços
+                  let formName = key.replace(/^(?i)(qci)[_\s]*/i, '').replace(/_/g, " ");
+                  
+                  let rawUrl = linksDB[key];
+                  let dlUrl = rawUrl;
+
+                  // Extrai apenas o URL se o utilizador colou todo o código iframe
+                  if (rawUrl.includes("src=")) {
+                      const match = rawUrl.match(/src=["']([^"']+)["']/);
+                      if (match) dlUrl = match[1];
+                  } else {
+                      dlUrl = rawUrl.replace(/^["']/, '').split(/["'\s]/)[0];
+                  }
+
+                  dlUrl = dlUrl.trim();
+
+                  // Garante que é feito o download/abertura do OneDrive
+                  if(!dlUrl.includes("?")) dlUrl += "?download=1";
+                  else if(!dlUrl.includes("download=1")) dlUrl += "&download=1";
+
+                  formsDiv.innerHTML += `
+                      <div class="card" style="border-left-color: var(--primary); display:flex; align-items:center; justify-content:space-between; padding: 14px 16px; margin-bottom: 10px;">
+                          <div style="display:flex; align-items:center; gap:10px; flex: 1; padding-right: 10px;">
+                              <span class="material-symbols-rounded" style="color:var(--primary); font-size:24px;">description</span>
+                              <strong style="font-size:13px; color:var(--text-main); word-break: break-word;">${formName}</strong>
+                          </div>
+                          <a href="${dlUrl}" target="_blank" class="btn-main" style="margin:0; padding:8px 14px; width:auto; border-radius:8px; font-size:12px; display:flex; align-items:center; gap:6px; flex-shrink: 0;"><span class="material-symbols-rounded" style="font-size:16px;">download</span> Abrir</a>
+                      </div>
+                  `;
+              }
+          }
+          if(!hasForms) formsDiv.innerHTML = "<div class='empty-state'><span class='material-symbols-rounded'>folder_off</span>Nenhum formulário carregado.</div>";
         }
       });
 
@@ -559,49 +580,27 @@
         const div = document.getElementById("lista-gestao");
         div.innerHTML = snap.empty ? `<div class='empty-state'><span class='material-symbols-rounded'>task</span>Nenhum pedido em estado pendente.</div>` : "";
         snap.forEach(d => {
-            const p = d.data();
-            const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Agora";
+            const p = d.data(); const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Agora";
             const card = document.createElement("div"); card.className = `card card-${p.status}`;
-            card.innerHTML = `
-                <div class="pedido-header">
-                    <span class="material-symbols-rounded">person</span> ${p.nome} 
-                    <span class="material-symbols-rounded" style="color:var(--text-muted); font-size: 14px;">arrow_forward</span> ${p.colega_nome}
-                </div>
-                <div class="pedido-corpo">
-                    <span class="material-symbols-rounded">update</span> <strong>${p.meuTurno}</strong> 
-                    <span class="material-symbols-rounded" style="color:var(--text-muted);">sync_alt</span> <strong>${p.turnoPretendido}</strong>
-                </div>
+            card.innerHTML = `<div class="pedido-header"><span class="material-symbols-rounded">person</span> ${p.nome} <span class="material-symbols-rounded" style="color:var(--text-muted); font-size: 14px;">arrow_forward</span> ${p.colega_nome}</div>
+                <div class="pedido-corpo"><span class="material-symbols-rounded">update</span> <strong>${p.meuTurno}</strong> <span class="material-symbols-rounded" style="color:var(--text-muted);">sync_alt</span> <strong>${p.turnoPretendido}</strong></div>
                 ${p.descricao ? `<div class="pedido-obs"><span class="material-symbols-rounded">chat</span> <span>${p.descricao}</span></div>` : ""}
-                <div class="pedido-footer">
-                    <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size: 14px;">calendar_today</span> ${dataStr}</span>
-                    <span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span>
-                </div>
+                <div class="pedido-footer"><span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size: 14px;">calendar_today</span> ${dataStr}</span><span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span></div>
                 ${p.status === 'pendente' ? `<div style="display:flex; gap:10px; margin-top:12px;">
                     <button onclick="window.decidir(this, '${d.id}', 'aprovado')" style="flex:1; padding:8px; border:none; background:#d1e7dd; color:#0f5132; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:16px;">thumb_up</span> APROVAR</button>
                     <button onclick="window.decidir(this, '${d.id}', 'reprovado')" style="flex:1; padding:8px; border:none; background:#f8d7da; color:#842029; border-radius:8px; font-weight:bold; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:6px;"><span class="material-symbols-rounded" style="font-size:16px;">thumb_down</span> REPROVAR</button>
-                </div>` : ""}
-            `;
+                </div>` : ""}`;
             div.appendChild(card);
         });
     });
   }
 
-  document.querySelectorAll(".btn-filter").forEach(btn => {
-      btn.addEventListener("click", () => {
-          document.querySelectorAll(".btn-filter").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          filtroGestao = btn.dataset.f;
-          carregarGestao();
-      });
-  });
+  document.querySelectorAll(".btn-filter").forEach(btn => { btn.addEventListener("click", () => { document.querySelectorAll(".btn-filter").forEach(b => b.classList.remove("active")); btn.classList.add("active"); filtroGestao = btn.dataset.f; carregarGestao(); }); });
 
   window.decidir = async (btn, id, s) => { 
       if(confirm(`Confirmar ação: ${s.toUpperCase()}?`)) {
-          btn.disabled = true;
-          await updateDoc(doc(db, "Pedidos", id), { status: s });
-          getDoc(doc(db, "Pedidos", id)).then(p => {
-              if(p.exists()) fetch(`${API_BASE}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: p.data().email, status: s }) }).catch(e => {});
-          });
+          btn.disabled = true; await updateDoc(doc(db, "Pedidos", id), { status: s });
+          getDoc(doc(db, "Pedidos", id)).then(p => { if(p.exists()) fetch(`${API_BASE}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: p.data().email, status: s }) }).catch(e => {}); });
       }
   };
 
@@ -611,19 +610,11 @@
         const div = document.getElementById("meus-pedidos");
         div.innerHTML = snap.empty ? "<div class='empty-state'><span class='material-symbols-rounded'>inbox</span>Nenhum pedido efetuado recentemente.</div>" : "";
         snap.forEach(d => {
-            const p = d.data();
-            const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Recente";
-            div.innerHTML += `
-                <div class="card card-${p.status}">
+            const p = d.data(); const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Recente";
+            div.innerHTML += `<div class="card card-${p.status}">
                     <div class="pedido-header"><span class="material-symbols-rounded">person</span> Para: ${p.colega_nome}</div>
-                    <div class="pedido-corpo">
-                        <span class="material-symbols-rounded">update</span> <strong>${p.meuTurno}</strong> 
-                        <span class="material-symbols-rounded" style="color:var(--text-muted); font-size:14px;">arrow_forward</span> <strong>${p.turnoPretendido}</strong>
-                    </div>
-                    <div class="pedido-footer">
-                        <span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size:14px;">calendar_today</span> ${dataStr}</span>
-                        <span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span>
-                    </div>
+                    <div class="pedido-corpo"><span class="material-symbols-rounded">update</span> <strong>${p.meuTurno}</strong> <span class="material-symbols-rounded" style="color:var(--text-muted); font-size:14px;">arrow_forward</span> <strong>${p.turnoPretendido}</strong></div>
+                    <div class="pedido-footer"><span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size:14px;">calendar_today</span> ${dataStr}</span><span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span></div>
                 </div>`;
         });
     });
@@ -634,18 +625,10 @@
       const snap = await getDocs(q);
       const sel = document.getElementById("p-colega-select");
       sel.innerHTML = '<option value="">-- Seleciona colega --</option>';
-      snap.forEach(d => {
-          if (d.data().email !== currentUser.email) {
-              const opt = document.createElement("option"); opt.value = d.data().email; opt.dataset.nome = d.data().nome; opt.textContent = d.data().nome;
-              sel.appendChild(opt);
-          }
-      });
+      snap.forEach(d => { if (d.data().email !== currentUser.email) { const opt = document.createElement("option"); opt.value = d.data().email; opt.dataset.nome = d.data().nome; opt.textContent = d.data().nome; sel.appendChild(opt); } });
   }
 
-  const formatarParaDB = (data, periodo) => {
-      if(!data) return periodo; const d = new Date(data + "T00:00:00");
-      return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" }) + ", " + periodo;
-  };
+  const formatarParaDB = (data, periodo) => { if(!data) return periodo; const d = new Date(data + "T00:00:00"); return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" }) + ", " + periodo; };
 
   document.getElementById("btn-enviar-pedido").onclick = async function() {
       const btn = this; const msg = document.getElementById("pedido-msg");
@@ -654,22 +637,12 @@
       const pretD = document.getElementById("p-pret-data").value; const pretP = document.getElementById("p-pret-periodo").value;
       const obs = document.getElementById("p-motivo").value;
       
-      if(!colega.value || !meuD || !pretD || !meuP || !pretP) { 
-          msg.innerHTML = "<span class='material-symbols-rounded' style='color:#e74c3c;'>error</span> <span style='color:#e74c3c;'>Preencha todas as datas.</span>"; 
-          return; 
-      }
+      if(!colega.value || !meuD || !pretD || !meuP || !pretP) { msg.innerHTML = "<span class='material-symbols-rounded' style='color:#e74c3c;'>error</span> <span style='color:#e74c3c;'>Preencha todas as datas.</span>"; return; }
 
       btn.disabled = true; btn.innerHTML = "<span class='material-symbols-rounded'>hourglass_empty</span> A aguardar...";
       try {
-          const meuTurnoFinal = formatarParaDB(meuD, meuP);
-          const turnoPretendidoFinal = formatarParaDB(pretD, pretP);
-
-          const docRef = await addDoc(collection(db, "Pedidos"), {
-              uid: currentUser.uid, nome: currentUser.email.split("@")[0], email: currentUser.email,
-              meuTurno: meuTurnoFinal, turnoPretendido: turnoPretendidoFinal, 
-              colega_email: colega.value, colega_nome: colega.options[colega.selectedIndex].dataset.nome,
-              descricao: obs, status: "pendente", role: userRole, createdAt: serverTimestamp()
-          });
+          const meuTurnoFinal = formatarParaDB(meuD, meuP); const turnoPretendidoFinal = formatarParaDB(pretD, pretP);
+          const docRef = await addDoc(collection(db, "Pedidos"), { uid: currentUser.uid, nome: currentUser.email.split("@")[0], email: currentUser.email, meuTurno: meuTurnoFinal, turnoPretendido: turnoPretendidoFinal, colega_email: colega.value, colega_nome: colega.options[colega.selectedIndex].dataset.nome, descricao: obs, status: "pendente", role: userRole, createdAt: serverTimestamp() });
           
           msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Pedido registado!</span>";
           document.getElementById("p-meu-periodo").value = ""; document.getElementById("p-pret-periodo").value = ""; document.getElementById("p-motivo").value = "";
@@ -677,10 +650,7 @@
 
           emailjs.send("service_ypyd6nc", "template_r12r1qi", { from_name: currentUser.email, meu_turno: meuTurnoFinal, pedido_id: docRef.id }).catch(e => {});
           fetch(`${API_BASE}/pedido`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome: currentUser.email.split("@")[0], colega_email: colega.value }) }).catch(e => {});
-      } catch(e) { 
-          msg.innerHTML = "<span class='material-symbols-rounded' style='color:#e74c3c;'>cloud_off</span> <span style='color:#e74c3c;'>Erro na comunicação.</span>"; 
-          btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido"; 
-      }
+      } catch(e) { msg.innerHTML = "<span class='material-symbols-rounded' style='color:#e74c3c;'>cloud_off</span> <span style='color:#e74c3c;'>Erro na comunicação.</span>"; btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido"; }
   };
 
   function carregarAvisos() {
@@ -689,15 +659,10 @@
         const div = document.getElementById("lista-avisos");
         div.innerHTML = snap.empty ? `<div class='empty-state'><span class='material-symbols-rounded'>campaign</span>Sem avisos recentes.</div>` : "";
         snap.forEach(d => {
-            const a = d.data();
-            const dataAviso = a.createdAt ? new Date(a.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "";
+            const a = d.data(); const dataAviso = a.createdAt ? new Date(a.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "";
             const card = document.createElement("div"); card.className = "card"; card.style.borderLeftColor = "var(--primary)";
-            
             card.innerHTML = `
-                <div class="aviso-item-header">
-                    <span class="aviso-item-autor"><span class="material-symbols-rounded">person</span> ${a.autor}</span>
-                    <span class="aviso-item-data"><span class="material-symbols-rounded" style="font-size: 14px;">calendar_today</span> ${dataAviso}</span>
-                </div>
+                <div class="aviso-item-header"><span class="aviso-item-autor"><span class="material-symbols-rounded">person</span> ${a.autor}</span><span class="aviso-item-data"><span class="material-symbols-rounded" style="font-size: 14px;">calendar_today</span> ${dataAviso}</span></div>
                 <div style="font-size:14px; margin:12px 0; white-space:pre-wrap;">${a.texto}</div>
                 <div style="display:flex; gap:15px; align-items:center; margin-top:10px;">
                     <button id="btn-conf-${d.id}" onclick="window.confirmarLeitura(this, '${d.id}')" class="aviso-item-btn"><span class="material-symbols-rounded" style="font-size:16px;">check_circle</span> Confirmar</button>
@@ -709,13 +674,7 @@
             getDoc(doc(db, "Avisos", d.id, "acknowledgements", currentUser.uid)).then(ack => {
                 if(ack.exists()) {
                     const btn = document.getElementById(`btn-conf-${d.id}`);
-                    if(btn) {
-                        btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:16px;">done_all</span> Lido`;
-                        btn.disabled = true;
-                        btn.style.borderColor = "var(--border)";
-                        btn.style.color = "var(--text-muted)";
-                        btn.style.cursor = "default";
-                    }
+                    if(btn) { btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:16px;">done_all</span> Lido`; btn.disabled = true; btn.style.borderColor = "var(--border)"; btn.style.color = "var(--text-muted)"; btn.style.cursor = "default"; }
                 }
             });
 
@@ -730,13 +689,9 @@
   }
 
   window.confirmarLeitura = async (btn, id) => {
-      btn.disabled = true;
-      btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:16px;">hourglass_empty</span> ...`;
+      btn.disabled = true; btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:16px;">hourglass_empty</span> ...`;
       await setDoc(doc(db, "Avisos", id, "acknowledgements", currentUser.uid), { nome: currentUser.email, data: serverTimestamp() }); 
-      btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:16px;">done_all</span> Lido`;
-      btn.style.borderColor = "var(--border)";
-      btn.style.color = "var(--text-muted)";
-      btn.style.cursor = "default";
+      btn.innerHTML = `<span class="material-symbols-rounded" style="font-size:16px;">done_all</span> Lido`; btn.style.borderColor = "var(--border)"; btn.style.color = "var(--text-muted)"; btn.style.cursor = "default";
   };
 
   document.getElementById("btn-novo-aviso").addEventListener("click", () => document.getElementById("modal-aviso").classList.remove("hidden"));
@@ -744,9 +699,7 @@
       const btn = this; const txt = document.getElementById("aviso-texto").value;
       if(!txt) return;
       btn.disabled = true;
-
       await addDoc(collection(db, "Avisos"), { texto: txt, autor: currentUser.email.split("@")[0], createdAt: serverTimestamp() });
-      
       document.getElementById("modal-aviso").classList.add("hidden"); document.getElementById("aviso-texto").value = ""; btn.disabled = false;
       fetch(`${API_BASE}/aviso`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ titulo: "Novo Aviso - Radiologia", texto: txt }) }).catch(e => {});
   });
@@ -771,27 +724,17 @@
   });
 
   const updateVisual = (a, i) => { a.classList.replace('inactive', 'active'); i.classList.replace('active', 'inactive'); };
-  
   document.getElementById("btn-tec-atual").onclick = () => { updateVisual(document.getElementById("btn-tec-atual"), document.getElementById("btn-tec-prox")); setViewer("div-tec", "dl-tec", linksDB.horario_tecnicos_atual); };
   document.getElementById("btn-tec-prox").onclick = () => { updateVisual(document.getElementById("btn-tec-prox"), document.getElementById("btn-tec-atual")); setViewer("div-tec", "dl-tec", linksDB.horario_tecnicos_proximo); };
   document.getElementById("btn-med-atual").onclick = () => { updateVisual(document.getElementById("btn-med-atual"), document.getElementById("btn-med-prox")); setViewer("div-med", "dl-med", linksDB.horario_medicos_atual); };
   document.getElementById("btn-med-prox").onclick = () => { updateVisual(document.getElementById("btn-med-prox"), document.getElementById("btn-med-atual")); setViewer("div-med", "dl-med", linksDB.horario_medicos_proximo); };
 
   document.getElementById("btn-login").onclick = async () => {
-      const btn = document.getElementById("btn-login");
-      const err = document.getElementById("login-error");
-      const u = document.getElementById("login-email").value.trim();
-      const p = document.getElementById("login-pass").value;
-
+      const btn = document.getElementById("btn-login"); const err = document.getElementById("login-error");
+      const u = document.getElementById("login-email").value.trim(); const p = document.getElementById("login-pass").value;
       if(!u || !p) { err.innerHTML = "<span class='material-symbols-rounded' style='font-size:16px;'>error</span> Preencha todos os campos."; return; }
       btn.disabled = true; btn.innerHTML = "<span class='material-symbols-rounded'>hourglass_empty</span> A verificar..."; err.innerHTML = "";
-
-      try {
-          await signInWithEmailAndPassword(auth, u.includes("@") ? u : u + "@imagiologia.local", p);
-      } catch(e) {
-          err.innerHTML = "<span class='material-symbols-rounded' style='font-size:16px;'>error</span> Credenciais inválidas.";
-          btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded'>login</span> ENTRAR";
-      }
+      try { await signInWithEmailAndPassword(auth, u.includes("@") ? u : u + "@imagiologia.local", p); } catch(e) { err.innerHTML = "<span class='material-symbols-rounded' style='font-size:16px;'>error</span> Credenciais inválidas."; btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded'>login</span> ENTRAR"; }
   };
 
   document.getElementById("btn-forgot").onclick = () => {
@@ -801,7 +744,6 @@
   };
   
   document.getElementById("btn-logout").onclick = () => { signOut(auth).then(() => window.location.reload()); };
-
 </script>
 </body>
 </html>
