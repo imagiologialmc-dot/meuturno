@@ -618,23 +618,60 @@
   window.decidir = async (btn, id, s) => { 
       if(confirm(`Confirmar ação: ${s.toUpperCase()}?`)) {
           btn.disabled = true; await updateDoc(doc(db, "Pedidos", id), { status: s });
-          getDoc(doc(db, "Pedidos", id)).then(p => { if(p.exists()) fetch(`${API_BASE}/status`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: p.data().email, status: s }) }).catch(e => {}); });
+          getDoc(doc(db, "Pedidos", id)).then(p => { 
+            if(p.exists()) {
+              // Notifica o autor do pedido sobre a decisão da coordenação
+              fetch(`${API_BASE}/status`, { 
+                method: "POST", 
+                headers: { "Content-Type": "application/json" }, 
+                body: JSON.stringify({ email: p.data().email, status: s }) 
+              }).catch(e => {}); 
+            }
+          });
       }
   };
 
   function carregarMeusPedidos() {
-    const q = query(collection(db, "Pedidos"), where("uid", "==", currentUser.uid), where("createdAt", ">=", limiteData), orderBy("createdAt", "desc"));
+    // Escuta todos os pedidos do serviço para filtrar localmente
+    const q = query(collection(db, "Pedidos"), where("createdAt", ">=", limiteData), orderBy("createdAt", "desc"));
     onSnapshot(q, snap => {
         const div = document.getElementById("meus-pedidos");
-        div.innerHTML = snap.empty ? "<div class='empty-state'><span class='material-symbols-rounded'>inbox</span>Nenhum pedido efetuado recentemente.</div>" : "";
+        div.innerHTML = "";
+        let temPedidos = false;
+
         snap.forEach(d => {
-            const p = d.data(); const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Recente";
-            div.innerHTML += `<div class="card card-${p.status}">
-                    <div class="pedido-header"><span class="material-symbols-rounded">person</span> Para: ${p.colega_nome}</div>
-                    <div class="pedido-corpo"><span class="material-symbols-rounded">update</span> <strong>${p.meuTurno}</strong> <span class="material-symbols-rounded" style="color:var(--text-muted); font-size:14px;">arrow_forward</span> <strong>${p.turnoPretendido}</strong></div>
-                    <div class="pedido-footer"><span style="display:flex; align-items:center; gap:4px;"><span class="material-symbols-rounded" style="font-size:14px;">calendar_today</span> ${dataStr}</span><span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span></div>
-                </div>`;
+            const p = d.data();
+            // Verifica se eu sou o autor OU o destinatário da troca
+            if (p.email === currentUser.email || p.colega_email === currentUser.email) {
+                temPedidos = true;
+                const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Recente";
+                const souEuOAutor = p.email === currentUser.email;
+
+                div.innerHTML += `
+                    <div class="card card-${p.status}">
+                        <div class="pedido-header">
+                            <span class="material-symbols-rounded">person</span> 
+                            ${souEuOAutor ? `Para: ${p.colega_nome}` : `De: ${p.nome}`}
+                        </div>
+                        <div class="pedido-corpo">
+                            <span class="material-symbols-rounded">update</span> 
+                            <strong>${p.meuTurno}</strong> 
+                            <span class="material-symbols-rounded" style="color:var(--text-muted); font-size:14px;">arrow_forward</span> 
+                            <strong>${p.turnoPretendido}</strong>
+                        </div>
+                        <div class="pedido-footer">
+                            <span style="display:flex; align-items:center; gap:4px;">
+                                <span class="material-symbols-rounded" style="font-size:14px;">calendar_today</span> ${dataStr}
+                            </span>
+                            <span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span>
+                        </div>
+                    </div>`;
+            }
         });
+
+        if (!temPedidos) {
+            div.innerHTML = "<div class='empty-state'><span class='material-symbols-rounded'>inbox</span>Nenhum pedido encontrado.</div>";
+        }
     });
   }
 
@@ -660,14 +697,34 @@
       btn.disabled = true; btn.innerHTML = "<span class='material-symbols-rounded'>hourglass_empty</span> A aguardar...";
       try {
           const meuTurnoFinal = formatarParaDB(meuD, meuP); const turnoPretendidoFinal = formatarParaDB(pretD, pretP);
-          const docRef = await addDoc(collection(db, "Pedidos"), { uid: currentUser.uid, nome: currentUser.email.split("@")[0], email: currentUser.email, meuTurno: meuTurnoFinal, turnoPretendido: turnoPretendidoFinal, colega_email: colega.value, colega_nome: colega.options[colega.selectedIndex].dataset.nome, descricao: obs, status: "pendente", role: userRole, createdAt: serverTimestamp() });
+          const docRef = await addDoc(collection(db, "Pedidos"), { 
+            uid: currentUser.uid, 
+            nome: currentUser.email.split("@")[0], 
+            email: currentUser.email, 
+            meuTurno: meuTurnoFinal, 
+            turnoPretendido: turnoPretendidoFinal, 
+            colega_email: colega.value, 
+            colega_nome: colega.options[colega.selectedIndex].dataset.nome, 
+            descricao: obs, 
+            status: "pendente", 
+            role: userRole, 
+            createdAt: serverTimestamp() 
+          });
           
           msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Pedido registado!</span>";
           document.getElementById("p-meu-periodo").value = ""; document.getElementById("p-pret-periodo").value = ""; document.getElementById("p-motivo").value = "";
           btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido";
 
+          // Envia e-mail via EmailJS
           emailjs.send("service_ypyd6nc", "template_r12r1qi", { from_name: currentUser.email, meu_turno: meuTurnoFinal, pedido_id: docRef.id }).catch(e => {});
-          fetch(`${API_BASE}/pedido`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome: currentUser.email.split("@")[0], colega_email: colega.value }) }).catch(e => {});
+          
+          // Envia notificação PUSH para o colega
+          fetch(`${API_BASE}/pedido`, { 
+            method: "POST", 
+            headers: { "Content-Type": "application/json" }, 
+            body: JSON.stringify({ nome: currentUser.email.split("@")[0], colega_email: colega.value }) 
+          }).catch(e => {});
+
       } catch(e) { msg.innerHTML = "<span class='material-symbols-rounded' style='color:#e74c3c;'>cloud_off</span> <span style='color:#e74c3c;'>Erro na comunicação.</span>"; btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido"; }
   };
 
