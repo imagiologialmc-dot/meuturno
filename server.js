@@ -7,17 +7,26 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// CONFIGURAÇÃO DO FIREBASE ADMIN
-// No Render, vais colocar a tua chave JSON numa variável de ambiente chamada FIREBASE_SERVICE_ACCOUNT
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+// CONFIGURAÇÃO REFORÇADA PARA EVITAR ERROS DE FORMATAÇÃO NO RENDER
+try {
+  let serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+  // Se a conta de serviço vier como string, tentamos converter e corrigir os \n
+  if (typeof serviceAccount === 'string') {
+    serviceAccount = JSON.parse(serviceAccount.replace(/\\n/g, '\n'));
+  }
+
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+  });
+  console.log("✅ Firebase Admin inicializado com sucesso!");
+} catch (error) {
+  console.error("❌ Erro ao inicializar Firebase Admin:", error.message);
+}
 
 const db = admin.firestore();
 
-// ROTA 1: NOTIFICAÇÃO DE NOVO PEDIDO DE TROCA
+// ROTA PARA NOVOS PEDIDOS
 app.post('/pedido', async (req, res) => {
   const { nome, colega_email } = req.body;
   try {
@@ -30,27 +39,30 @@ app.post('/pedido', async (req, res) => {
     const tokens = [];
     tokensSnap.forEach(t => tokens.push(t.data().token));
 
-    if (tokens.length === 0) return res.status(200).send('Sem tokens');
+    if (tokens.length === 0) return res.status(200).send('Sem tokens registados para este colega');
 
     const message = {
       notification: {
         title: 'Nova Proposta de Troca 🔄',
-        body: `${nome} enviou-te um pedido de troca.`
+        body: `${nome} solicitou uma troca de turno contigo.`
       },
       tokens: tokens
     };
 
     await admin.messaging().sendEachForMulticast(message);
-    res.status(200).send('Notificado');
-  } catch (e) { res.status(500).send(e.message); }
+    res.status(200).send('Notificações enviadas');
+  } catch (e) { 
+    console.error("Erro na rota /pedido:", e.message);
+    res.status(500).send(e.message); 
+  }
 });
 
-// ROTA 2: NOTIFICAÇÃO DE STATUS (APROVADO/REPROVADO)
+// ROTA PARA STATUS (APROVADO/REPROVADO)
 app.post('/status', async (req, res) => {
   const { email, status } = req.body;
   try {
     const userSnap = await db.collection('Utilizadores').where('email', '==', email).get();
-    if (userSnap.empty) return res.status(404).send('User não encontrado');
+    if (userSnap.empty) return res.status(404).send('Utilizador não encontrado');
 
     const userId = userSnap.docs[0].id;
     const tokensSnap = await db.collection('Utilizadores').doc(userId).collection('tokens').get();
@@ -60,16 +72,19 @@ app.post('/status', async (req, res) => {
 
     const message = {
       notification: {
-        title: `Pedido de Troca: ${status.toUpperCase()}`,
-        body: `A coordenação marcou o teu pedido como ${status}.`
+        title: `Troca de Turno: ${status.toUpperCase()}`,
+        body: `O teu pedido de troca foi ${status} pela coordenação.`
       },
       tokens: tokens
     };
 
     await admin.messaging().sendEachForMulticast(message);
-    res.status(200).send('Notificado');
-  } catch (e) { res.status(500).send(e.message); }
+    res.status(200).send('Notificação de status enviada');
+  } catch (e) { 
+    console.error("Erro na rota /status:", e.message);
+    res.status(500).send(e.message); 
+  }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Servidor a correr na porta ${PORT}`));
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`🚀 Servidor pronto na porta ${PORT}`));
