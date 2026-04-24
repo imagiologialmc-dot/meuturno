@@ -1,90 +1,69 @@
 const express = require('express');
 const admin = require('firebase-admin');
 const cors = require('cors');
-const bodyParser = require('body-parser');
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json());
+app.use(express.json());
 
-// CONFIGURAÇÃO REFORÇADA PARA EVITAR ERROS DE FORMATAÇÃO NO RENDER
+// INICIALIZAÇÃO SEGURA
 try {
-  let serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const saRaw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!saRaw) throw new Error("Variável FIREBASE_SERVICE_ACCOUNT não encontrada!");
 
-  // Se a conta de serviço vier como string, tentamos converter e corrigir os \n
-  if (typeof serviceAccount === 'string') {
-    serviceAccount = JSON.parse(serviceAccount.replace(/\\n/g, '\n'));
-  }
+  // Corrige quebras de linha e limpa espaços extras
+  const saClean = saRaw.trim().replace(/\\n/g, '\n');
+  const serviceAccount = JSON.parse(saClean);
 
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount)
   });
-  console.log("✅ Firebase Admin inicializado com sucesso!");
-} catch (error) {
-  console.error("❌ Erro ao inicializar Firebase Admin:", error.message);
+  console.log("✅ Conectado ao Firebase com sucesso!");
+} catch (e) {
+  console.error("❌ ERRO CRÍTICO NO FIREBASE:", e.message);
 }
 
 const db = admin.firestore();
 
-// ROTA PARA NOVOS PEDIDOS
+app.get('/', (req, res) => res.send('Servidor Ativo!'));
+
 app.post('/pedido', async (req, res) => {
-  const { nome, colega_email } = req.body;
   try {
+    const { nome, colega_email } = req.body;
     const userSnap = await db.collection('Utilizadores').where('email', '==', colega_email).get();
     if (userSnap.empty) return res.status(404).send('Colega não encontrado');
 
-    const userId = userSnap.docs[0].id;
-    const tokensSnap = await db.collection('Utilizadores').doc(userId).collection('tokens').get();
-    
+    const tokensSnap = await db.collection('Utilizadores').doc(userSnap.docs[0].id).collection('tokens').get();
     const tokens = [];
     tokensSnap.forEach(t => tokens.push(t.data().token));
 
-    if (tokens.length === 0) return res.status(200).send('Sem tokens registados para este colega');
+    if (tokens.length === 0) return res.send('Sem dispositivos');
 
-    const message = {
-      notification: {
-        title: 'Nova Proposta de Troca 🔄',
-        body: `${nome} solicitou uma troca de turno contigo.`
-      },
+    await admin.messaging().sendEachForMulticast({
+      notification: { title: 'Nova Troca 🔄', body: `${nome} pediu uma troca.` },
       tokens: tokens
-    };
-
-    await admin.messaging().sendEachForMulticast(message);
-    res.status(200).send('Notificações enviadas');
-  } catch (e) { 
-    console.error("Erro na rota /pedido:", e.message);
-    res.status(500).send(e.message); 
-  }
+    });
+    res.send('Notificado');
+  } catch (err) { res.status(500).send(err.message); }
 });
 
-// ROTA PARA STATUS (APROVADO/REPROVADO)
 app.post('/status', async (req, res) => {
-  const { email, status } = req.body;
   try {
+    const { email, status } = req.body;
     const userSnap = await db.collection('Utilizadores').where('email', '==', email).get();
-    if (userSnap.empty) return res.status(404).send('Utilizador não encontrado');
+    if (userSnap.empty) return res.status(404).send('User não encontrado');
 
-    const userId = userSnap.docs[0].id;
-    const tokensSnap = await db.collection('Utilizadores').doc(userId).collection('tokens').get();
-    
+    const tokensSnap = await db.collection('Utilizadores').doc(userSnap.docs[0].id).collection('tokens').get();
     const tokens = [];
     tokensSnap.forEach(t => tokens.push(t.data().token));
 
-    const message = {
-      notification: {
-        title: `Troca de Turno: ${status.toUpperCase()}`,
-        body: `O teu pedido de troca foi ${status} pela coordenação.`
-      },
+    await admin.messaging().sendEachForMulticast({
+      notification: { title: `Troca ${status}`, body: `O teu pedido foi ${status}.` },
       tokens: tokens
-    };
-
-    await admin.messaging().sendEachForMulticast(message);
-    res.status(200).send('Notificação de status enviada');
-  } catch (e) { 
-    console.error("Erro na rota /status:", e.message);
-    res.status(500).send(e.message); 
-  }
+    });
+    res.send('Status enviado');
+  } catch (err) { res.status(500).send(err.message); }
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Servidor pronto na porta ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Porta: ${PORT}`));
