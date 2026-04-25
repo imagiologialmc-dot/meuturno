@@ -13,7 +13,6 @@ try {
   const saBase64 = process.env.FIREBASE_SERVICE_ACCOUNT;
   if (!saBase64) throw new Error("Variável FIREBASE_SERVICE_ACCOUNT não encontrada no Render!");
 
-  // Converte de Base64 para String e depois para Objeto JSON
   const saJson = Buffer.from(saBase64, 'base64').toString('utf8');
   const serviceAccount = JSON.parse(saJson);
 
@@ -24,76 +23,82 @@ try {
   }
   
   db = admin.firestore();
-  console.log("✅ SERVIDOR CONECTADO AO FIREBASE!");
+  console.log("✅ SISTEMA OPERACIONAL: Conectado ao Firebase!");
 } catch (e) {
-  console.error("❌ ERRO CRÍTICO:", e.message);
+  console.error("❌ ERRO NO ARRANQUE:", e.message);
 }
 
-app.get('/', (req, res) => res.send('Servidor Ativo 🚀'));
+app.get('/', (req, res) => res.send('Servidor Online 🚀'));
 
+// ROTA 1: NOVOS PEDIDOS DE TROCA
 app.post('/pedido', async (req, res) => {
-  if (!db) return res.status(500).send("Erro: Firebase não carregou.");
+  if (!db) return res.status(500).send("Firebase Offline");
   try {
     const { nome, colega_email } = req.body;
-    // Procura o colega pelo email
     const userSnap = await db.collection('Utilizadores').where('email', '==', colega_email).get();
     
-    if (userSnap.empty) return res.status(404).send('Colega não encontrado');
+    if (!userSnap.empty) {
+      const tokensSnap = await db.collection('Utilizadores').doc(userSnap.docs[0].id).collection('tokens').get();
+      const tokens = [];
+      tokensSnap.forEach(t => tokens.push(t.data().token));
 
-    const userId = userSnap.docs[0].id;
-    const tokensSnap = await db.collection('Utilizadores').doc(userId).collection('tokens').get();
-    
-    const tokens = [];
-    tokensSnap.forEach(t => tokens.push(t.data().token));
-
-    if (tokens.length === 0) return res.send('O colega não tem notificações ativas.');
-
-    const message = {
-      notification: {
-        title: 'Nova Troca de Turno 🔄',
-        body: `${nome} solicitou uma troca contigo no MeuTurno.`
-      },
-      tokens: tokens
-    };
-
-    await admin.messaging().sendEachForMulticast(message);
-    res.send('Notificação enviada com sucesso!');
-  } catch (err) {
-    console.error("Erro na rota /pedido:", err.message);
-    res.status(500).send(err.message);
-  }
+      if (tokens.length > 0) {
+        await admin.messaging().sendEachForMulticast({
+          notification: { title: 'Nova Troca de Turno 🔄', body: `${nome} solicitou uma troca contigo no MeuTurno.` },
+          tokens: tokens
+        });
+      }
+    }
+    res.send('Notificação de pedido enviada');
+  } catch (err) { res.status(500).send(err.message); }
 });
 
+// ROTA 2: STATUS DA TROCA (APROVADO/REPROVADO)
 app.post('/status', async (req, res) => {
-  if (!db) return res.status(500).send("Erro: Firebase não carregou.");
+  if (!db) return res.status(500).send("Firebase Offline");
   try {
     const { email, status } = req.body;
     const userSnap = await db.collection('Utilizadores').where('email', '==', email).get();
     
-    if (userSnap.empty) return res.status(404).send('Utilizador não encontrado');
+    if (!userSnap.empty) {
+      const tokensSnap = await db.collection('Utilizadores').doc(userSnap.docs[0].id).collection('tokens').get();
+      const tokens = [];
+      tokensSnap.forEach(t => tokens.push(t.data().token));
 
-    const userId = userSnap.docs[0].id;
-    const tokensSnap = await db.collection('Utilizadores').doc(userId).collection('tokens').get();
+      if (tokens.length > 0) {
+        await admin.messaging().sendEachForMulticast({
+          notification: { title: `Troca ${status.toUpperCase()}`, body: `O teu pedido foi ${status}.` },
+          tokens: tokens
+        });
+      }
+    }
+    res.send('Notificação de status enviada');
+  } catch (err) { res.status(500).send(err.message); }
+});
+
+// ROTA 3: NOVOS AVISOS NO QUADRO (O QUE ESTAVA A DAR ERRO 404)
+app.post('/aviso', async (req, res) => {
+  if (!db) return res.status(500).send("Firebase Offline");
+  try {
+    const { titulo, texto } = req.body;
     
+    // Procura todos os tokens de todos os utilizadores para o aviso geral
+    const allTokensSnap = await db.collectionGroup('tokens').get();
     const tokens = [];
-    tokensSnap.forEach(t => tokens.push(t.data().token));
+    allTokensSnap.forEach(t => tokens.push(t.data().token));
 
-    if (tokens.length === 0) return res.send('Utilizador sem tokens.');
-
-    const message = {
-      notification: {
-        title: `Troca ${status.toUpperCase()}`,
-        body: `O teu pedido de troca foi ${status} pela coordenação.`
-      },
-      tokens: tokens
-    };
-
-    await admin.messaging().sendEachForMulticast(message);
-    res.send('Notificação de status enviada!');
-  } catch (err) {
-    res.status(500).send(err.message);
-  }
+    if (tokens.length > 0) {
+      // Remove tokens duplicados para não enviar várias vezes para o mesmo telemóvel
+      const uniqueTokens = [...new Set(tokens)];
+      
+      await admin.messaging().sendEachForMulticast({
+        notification: { title: titulo || 'Novo Aviso 📢', body: texto },
+        tokens: uniqueTokens
+      });
+    }
+    res.send('Notificação de aviso enviada');
+  } catch (err) { res.status(500).send(err.message); }
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Servidor a rodar na porta ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Porta: ${PORT}`));
