@@ -1,36 +1,37 @@
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
+// ESCUTA MENSAGENS EM BACKGROUND
+// Este código é o que faz a janela da notificação aparecer no telemóvel/PC
+messaging.onBackgroundMessage((payload) => {
+  console.log('[sw.js] Mensagem recebida em background:', payload);
 
-firebase.initializeApp({
-  apiKey: "AIzaSyDnQ5fQFmx1-48lJwcaJhSKq2Y8MAaNAcY",
-  projectId: "meuturno-d7d1a",
-  messagingSenderId: "634840990788",
-  appId: "1:634840990788:web:3b7b0e8d1d051959d86811"
+  const notificationTitle = payload.notification.title || 'Novo Alerta MeuTurno';
+  const notificationOptions = {
+    body: payload.notification.body,
+    icon: './icon-512.png', // Garante que o caminho do ícone está correto
+    badge: './icon-512.png',
+    vibrate: [200, 100, 200],
+    data: {
+      url: './index.html' // Para onde o utilizador vai ao clicar
+    }
+  };
+
+  self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-const messaging = firebase.messaging();
-
-// MODO OFFLINE (CACHING)
-const CACHE_NAME = 'meuturno-v2-cache';
-const urlsToCache = [
-  './',
-  './index.html',
-  './manifest.json',
-  './icon-512.png',
-  './Hlogo.png',
-  'https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0'
-];
-
-self.addEventListener('install', event => {
+// AÇÃO AO CLICAR NA NOTIFICAÇÃO
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
-});
-
-// Tenta sempre ir buscar à net (para estar atualizado). Se não houver net, usa a memória (Offline).
-self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      if (clientList.length > 0) {
+        let client = clientList[0];
+        for (let i = 0; i < clientList.length; i++) {
+          if (clientList[i].focused) {
+            client = clientList[i];
+          }
+        }
+        return client.focus();
+      }
+      return clients.openWindow('./index.html');
+    })
   );
 });
