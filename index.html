@@ -632,7 +632,6 @@
   };
 
   function carregarMeusPedidos() {
-    // Escuta todos os pedidos do serviço para filtrar localmente
     const q = query(collection(db, "Pedidos"), where("createdAt", ">=", limiteData), orderBy("createdAt", "desc"));
     onSnapshot(q, snap => {
         const div = document.getElementById("meus-pedidos");
@@ -641,7 +640,6 @@
 
         snap.forEach(d => {
             const p = d.data();
-            // Verifica se eu sou o autor OU o destinatário da troca
             if (p.email === currentUser.email || p.colega_email === currentUser.email) {
                 temPedidos = true;
                 const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Recente";
@@ -686,17 +684,27 @@
   const formatarParaDB = (data, periodo) => { if(!data) return periodo; const d = new Date(data + "T00:00:00"); return d.toLocaleDateString("pt-PT", { day: "2-digit", month: "2-digit" }) + ", " + periodo; };
 
   document.getElementById("btn-enviar-pedido").onclick = async function() {
-      const btn = this; const msg = document.getElementById("pedido-msg");
+      const btn = this; 
+      const msg = document.getElementById("pedido-msg");
       const colega = document.getElementById("p-colega-select");
-      const meuD = document.getElementById("p-meu-data").value; const meuP = document.getElementById("p-meu-periodo").value;
-      const pretD = document.getElementById("p-pret-data").value; const pretP = document.getElementById("p-pret-periodo").value;
+      const meuD = document.getElementById("p-meu-data").value; 
+      const meuP = document.getElementById("p-meu-periodo").value;
+      const pretD = document.getElementById("p-pret-data").value; 
+      const pretP = document.getElementById("p-pret-periodo").value;
       const obs = document.getElementById("p-motivo").value;
       
-      if(!colega.value || !meuD || !pretD || !meuP || !pretP) { msg.innerHTML = "<span class='material-symbols-rounded' style='color:#e74c3c;'>error</span> <span style='color:#e74c3c;'>Preencha todas as datas.</span>"; return; }
+      if(!colega.value || !meuD || !pretD || !meuP || !pretP) { 
+          alert("Por favor, preencha todos os campos e selecione um colega.");
+          return; 
+      }
 
-      btn.disabled = true; btn.innerHTML = "<span class='material-symbols-rounded'>hourglass_empty</span> A aguardar...";
+      btn.disabled = true; 
+      btn.innerHTML = "<span class='material-symbols-rounded'>hourglass_empty</span> A enviar...";
+      
       try {
-          const meuTurnoFinal = formatarParaDB(meuD, meuP); const turnoPretendidoFinal = formatarParaDB(pretD, pretP);
+          const meuTurnoFinal = formatarParaDB(meuD, meuP); 
+          const turnoPretendidoFinal = formatarParaDB(pretD, pretP);
+          
           const docRef = await addDoc(collection(db, "Pedidos"), { 
             uid: currentUser.uid, 
             nome: currentUser.email.split("@")[0], 
@@ -711,21 +719,37 @@
             createdAt: serverTimestamp() 
           });
           
-          msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Pedido registado!</span>";
-          document.getElementById("p-meu-periodo").value = ""; document.getElementById("p-pret-periodo").value = ""; document.getElementById("p-motivo").value = "";
-          btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido";
-
-          // Envia e-mail via EmailJS
-          emailjs.send("service_ypyd6nc", "template_r12r1qi", { from_name: currentUser.email, meu_turno: meuTurnoFinal, pedido_id: docRef.id }).catch(e => {});
+          console.log("A chamar Render em:", `${API_BASE}/pedido`);
           
-          // Envia notificação PUSH para o colega
-          fetch(`${API_BASE}/pedido`, { 
+          const response = await fetch(`${API_BASE}/pedido`, { 
             method: "POST", 
             headers: { "Content-Type": "application/json" }, 
-            body: JSON.stringify({ nome: currentUser.email.split("@")[0], colega_email: colega.value }) 
+            body: JSON.stringify({ 
+                nome: currentUser.email.split("@")[0], 
+                colega_email: colega.value 
+            }) 
+          });
+
+          if (response.ok) {
+              console.log("Render notificado com sucesso!");
+          }
+
+          emailjs.send("service_ypyd6nc", "template_r12r1qi", { 
+              from_name: currentUser.email, 
+              meu_turno: meuTurnoFinal, 
+              pedido_id: docRef.id 
           }).catch(e => {});
 
-      } catch(e) { msg.innerHTML = "<span class='material-symbols-rounded' style='color:#e74c3c;'>cloud_off</span> <span style='color:#e74c3c;'>Erro na comunicação.</span>"; btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido"; }
+          msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Pedido enviado e notificado!</span>";
+          btn.disabled = false;
+          btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido";
+
+      } catch(e) { 
+          console.error("Erro Geral:", e);
+          alert("Erro ao enviar: " + e.message);
+          btn.disabled = false; 
+          btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido"; 
+      }
   };
 
   function carregarAvisos() {
