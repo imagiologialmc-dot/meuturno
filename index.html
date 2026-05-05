@@ -342,7 +342,7 @@
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, onSnapshot, collection, query, where, orderBy, getDoc, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, onSnapshot, collection, query, where, orderBy, getDoc, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc, or } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
   import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
   const firebaseConfig = {
@@ -585,6 +585,7 @@
 
       carregarAvisos();
       carregarMeusPedidos();
+      monitorizarAlertasDeTroca();
 
     } else {
       document.getElementById("app-screen").classList.add("hidden");
@@ -632,39 +633,48 @@
   };
 
   function carregarMeusPedidos() {
-    const q = query(collection(db, "Pedidos"), where("createdAt", ">=", limiteData), orderBy("createdAt", "desc"));
+    const div = document.getElementById("meus-pedidos");
+    const meuEmail = currentUser.email.toLowerCase();
+
+    const q = query(
+        collection(db, "Pedidos"),
+        or(
+            where("email", "==", meuEmail),
+            where("colega_email", "==", meuEmail)
+        ),
+        where("createdAt", ">=", limiteData),
+        orderBy("createdAt", "desc")
+    );
+
     onSnapshot(q, snap => {
-        const div = document.getElementById("meus-pedidos");
         div.innerHTML = "";
         let temPedidos = false;
 
         snap.forEach(d => {
+            temPedidos = true;
             const p = d.data();
-            if (p.email === currentUser.email || p.colega_email === currentUser.email) {
-                temPedidos = true;
-                const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Recente";
-                const souEuOAutor = p.email === currentUser.email;
+            const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Recente";
+            const souEuOAutor = p.email.toLowerCase() === meuEmail;
 
-                div.innerHTML += `
-                    <div class="card card-${p.status}">
-                        <div class="pedido-header">
-                            <span class="material-symbols-rounded">person</span> 
-                            ${souEuOAutor ? `Para: ${p.colega_nome}` : `De: ${p.nome}`}
-                        </div>
-                        <div class="pedido-corpo">
-                            <span class="material-symbols-rounded">update</span> 
-                            <strong>${p.meuTurno}</strong> 
-                            <span class="material-symbols-rounded" style="color:var(--text-muted); font-size:14px;">arrow_forward</span> 
-                            <strong>${p.turnoPretendido}</strong>
-                        </div>
-                        <div class="pedido-footer">
-                            <span style="display:flex; align-items:center; gap:4px;">
-                                <span class="material-symbols-rounded" style="font-size:14px;">calendar_today</span> ${dataStr}
-                            </span>
-                            <span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span>
-                        </div>
-                    </div>`;
-            }
+            div.innerHTML += `
+                <div class="card card-${p.status}">
+                    <div class="pedido-header">
+                        <span class="material-symbols-rounded">person</span> 
+                        ${souEuOAutor ? `Para: ${p.colega_nome}` : `De: ${p.nome}`}
+                    </div>
+                    <div class="pedido-corpo">
+                        <span class="material-symbols-rounded">update</span> 
+                        <strong>${p.meuTurno}</strong> 
+                        <span class="material-symbols-rounded" style="color:var(--text-muted); font-size:14px;">arrow_forward</span> 
+                        <strong>${p.turnoPretendido}</strong>
+                    </div>
+                    <div class="pedido-footer">
+                        <span style="display:flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-rounded" style="font-size:14px;">calendar_today</span> ${dataStr}
+                        </span>
+                        <span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span>
+                    </div>
+                </div>`;
         });
 
         if (!temPedidos) {
@@ -672,6 +682,42 @@
         }
     });
   }
+
+  function monitorizarAlertasDeTroca() {
+    const listaAvisos = document.getElementById("lista-avisos");
+    const meuEmail = currentUser.email.toLowerCase();
+
+    const q = query(
+        collection(db, "Pedidos"),
+        where("colega_email", "==", meuEmail),
+        where("status", "==", "pendente")
+    );
+
+    onSnapshot(q, snap => {
+        document.querySelectorAll(".alerta-troca-dinamico").forEach(el => el.remove());
+
+        snap.forEach(d => {
+            const p = d.data();
+            const alertaHTML = `
+                <div class="card alerta-troca-dinamico" style="border-left: 4px solid #FFD700; background: rgba(255, 215, 0, 0.1); animation: formEntry 0.5s ease;">
+                    <div class="pedido-header" style="color: #856404;">
+                        <span class="material-symbols-rounded">notification_important</span> 
+                        <strong>Troca Pendente para Si!</strong>
+                    </div>
+                    <div style="font-size:14px; margin:8px 0; color: var(--text-main);">
+                        O colega <b>${p.nome}</b> solicitou uma troca: <br>
+                        ${p.meuTurno} <span class="material-symbols-rounded" style="font-size:14px; vertical-align: middle;">sync_alt</span> ${p.turnoPretendido}
+                    </div>
+                    <button onclick="document.querySelector('[data-tab=\'pedidos\']').click()" 
+                            class="aviso-item-btn" style="border-color: #856404; color: #856404; width: 100%; justify-content: center;">
+                        <span class="material-symbols-rounded">visibility</span> Ver Pedido
+                    </button>
+                </div>`;
+            
+            listaAvisos.insertAdjacentHTML('afterbegin', alertaHTML);
+        });
+    });
+}
 
   async function carregarColegasRole() {
       const q = query(collection(db, "Utilizadores"), where("role", "==", userRole));
