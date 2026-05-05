@@ -411,6 +411,8 @@
       atualizarIconeSino();
 
       const isOptional = (userRole === 'administracao' || userRole === 'medico' || userRole === 'recepcao');
+      if (sessionStorage.getItem('notif_session_dismissed')) return;
+
       const modal = document.getElementById("modal-notificacoes");
       const btnAtiv = document.getElementById("btn-ativar-notif");
       const btnMais = document.getElementById("btn-mais-tarde");
@@ -426,27 +428,31 @@
                   modal.classList.remove("hidden");
               }
           } else {
-              if (!sessionStorage.getItem('notif_session_dismissed')) {
-                  title.innerHTML = `<span class="material-symbols-rounded">warning</span> Alertas Importantes`;
-                  desc.innerHTML = "Para o teu perfil técnico, as notificações são fundamentais para garantir a comunicação de escalas e trocas.";
-                  btnMais.style.display = "block"; btnMais.innerText = "Lembrar mais tarde"; 
-                  modal.classList.remove("hidden");
-              }
+              title.innerHTML = `<span class="material-symbols-rounded">warning</span> Alertas Importantes`;
+              desc.innerHTML = "As notificações são fundamentais para garantir a comunicação de escalas e trocas.";
+              btnAtiv.innerText = "Entendi";
+              btnMais.style.display = "none"; 
+              modal.classList.remove("hidden");
           }
       } else if (Notification.permission === "denied" && !isOptional) {
           title.innerHTML = `<span class="material-symbols-rounded" style="color:#e74c3c;">error</span> Alertas Bloqueados`;
-          desc.innerHTML = "As notificações são obrigatórias para o teu perfil. <br><br><b>Como resolver:</b> Toque no cadeado (🔒) na barra de endereço lá em cima, vá a 'Permissões', permita as Notificações e clique no botão abaixo.";
-          btnAtiv.innerHTML = `<span class="material-symbols-rounded" style="font-size: 18px;">refresh</span> Já Desbloqueei`;
-          btnMais.style.display = "none"; modal.classList.remove("hidden");
+          desc.innerHTML = "As notificações estão desativadas. Para as ativar, clica no cadeado (🔒) na barra de endereço.";
+          btnAtiv.innerText = "Continuar para a App";
+          btnMais.style.display = "none"; 
+          modal.classList.remove("hidden");
       } else if (Notification.permission === "granted") {
           pedirNotificacoes();
       }
   }
 
   document.getElementById("btn-ativar-notif").onclick = async () => {
-      if (Notification.permission === "denied") window.location.reload(); 
-      else { document.getElementById("modal-notificacoes").classList.add("hidden"); await pedirNotificacoes(); setTimeout(gerirAvisoNotificacoes, 500); }
+      sessionStorage.setItem('notif_session_dismissed', 'true'); 
+      document.getElementById("modal-notificacoes").classList.add("hidden");
+      if (Notification.permission === "default") {
+          await pedirNotificacoes();
+      }
   };
+  
   document.getElementById("btn-mais-tarde").onclick = () => {
       if (userRole === 'administracao' || userRole === 'medico' || userRole === 'recepcao') localStorage.setItem('notif_never_ask', 'true'); 
       else sessionStorage.setItem('notif_session_dismissed', 'true'); 
@@ -517,7 +523,6 @@
           setViewer("div-oncall", "dl-oncall", linksDB.oncall);
           setViewer("div-tel", "dl-tel", linksDB["lista telefonica"]); 
 
-          // --- MOTOR INTELIGENTE DE FORMULÁRIOS QCI ---
           const formsDiv = document.getElementById("lista-formularios");
           formsDiv.innerHTML = "";
           let hasForms = false;
@@ -529,7 +534,6 @@
               if (lowerKey.startsWith("qci_") || lowerKey.startsWith("qci ")) {
                   hasForms = true;
                   
-                  // Limpa prefixos e troca underscores
                   let wordsRaw = key.replace(/^qci[_\s]*/i, '').replace(/_/g, " ");
                   
                   const siglas = ['RM', 'TC', 'MM', 'BAAF', 'QCI', 'EKG', 'RX'];
@@ -560,7 +564,6 @@
 
                   dlUrl = dlUrl.trim();
                   
-                  // CORREÇÃO: Transforma link de embed em link de DOWNLOAD DIRETO (OneDrive)
                   if(dlUrl.includes("onedrive.live.com/embed")) {
                       dlUrl = dlUrl.replace("/embed", "/download");
                   } else {
@@ -621,7 +624,6 @@
           btn.disabled = true; await updateDoc(doc(db, "Pedidos", id), { status: s });
           getDoc(doc(db, "Pedidos", id)).then(p => { 
             if(p.exists()) {
-              // Notifica o autor do pedido sobre a decisão da coordenação
               fetch(`${API_BASE}/status`, { 
                 method: "POST", 
                 headers: { "Content-Type": "application/json" }, 
@@ -649,7 +651,6 @@
     onSnapshot(q, snap => {
         div.innerHTML = "";
         let temPedidos = false;
-
         snap.forEach(d => {
             temPedidos = true;
             const p = d.data();
@@ -676,26 +677,19 @@
                     </div>
                 </div>`;
         });
-
-        if (!temPedidos) {
-            div.innerHTML = "<div class='empty-state'><span class='material-symbols-rounded'>inbox</span>Nenhum pedido encontrado.</div>";
-        }
+        if (!temPedidos) div.innerHTML = "<div class='empty-state'><span class='material-symbols-rounded'>inbox</span>Nenhum pedido encontrado.</div>";
+    }, (error) => {
+        console.warn("Filtro de segurança ativo. A aguardar índice.");
     });
   }
 
   function monitorizarAlertasDeTroca() {
     const listaAvisos = document.getElementById("lista-avisos");
     const meuEmail = currentUser.email.toLowerCase();
-
-    const q = query(
-        collection(db, "Pedidos"),
-        where("colega_email", "==", meuEmail),
-        where("status", "==", "pendente")
-    );
+    const q = query(collection(db, "Pedidos"), where("colega_email", "==", meuEmail), where("status", "==", "pendente"));
 
     onSnapshot(q, snap => {
         document.querySelectorAll(".alerta-troca-dinamico").forEach(el => el.remove());
-
         snap.forEach(d => {
             const p = d.data();
             const alertaHTML = `
@@ -713,11 +707,10 @@
                         <span class="material-symbols-rounded">visibility</span> Ver Pedido
                     </button>
                 </div>`;
-            
             listaAvisos.insertAdjacentHTML('afterbegin', alertaHTML);
         });
     });
-}
+  }
 
   async function carregarColegasRole() {
       const q = query(collection(db, "Utilizadores"), where("role", "==", userRole));
@@ -765,8 +758,6 @@
             createdAt: serverTimestamp() 
           });
           
-          console.log("A chamar Render em:", `${API_BASE}/pedido`);
-          
           const response = await fetch(`${API_BASE}/pedido`, { 
             method: "POST", 
             headers: { "Content-Type": "application/json" }, 
@@ -776,22 +767,17 @@
             }) 
           });
 
-          if (response.ok) {
-              console.log("Render notificado com sucesso!");
-          }
-
           emailjs.send("service_ypyd6nc", "template_r12r1qi", { 
               from_name: currentUser.email, 
               meu_turno: meuTurnoFinal, 
               pedido_id: docRef.id 
           }).catch(e => {});
 
-          msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Pedido enviado e notificado!</span>";
+          msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Pedido enviado!</span>";
           btn.disabled = false;
           btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido";
 
       } catch(e) { 
-          console.error("Erro Geral:", e);
           alert("Erro ao enviar: " + e.message);
           btn.disabled = false; 
           btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido"; 
