@@ -393,55 +393,80 @@
       else { bell.innerText = "notifications_off"; bell.title = "Desativadas"; }
   }
 
-  async function pedirNotificacoes() {
+async function pedirNotificacoes() {
     if (!('Notification' in window)) return;
     try {
-      const perm = await Notification.requestPermission();
-      atualizarIconeSino();
-      if (perm === 'granted') {
-        const reg = await navigator.serviceWorker.ready;
-        const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
-        if (token) await setDoc(doc(db, 'Utilizadores', currentUser.uid, 'tokens', token), { token: token, updatedAt: serverTimestamp() }, { merge: true });
-      }
-    } catch(e) {}
-  }
+        const perm = await Notification.requestPermission();
+        atualizarIconeSino();
+        
+        if (perm === 'granted') {
+            const reg = await navigator.serviceWorker.ready;
+            const token = await getToken(messaging, { 
+                vapidKey: VAPID_KEY, 
+                serviceWorkerRegistration: reg 
+            });
 
-  function gerirAvisoNotificacoes() {
-      if (!('Notification' in window)) return;
-      atualizarIconeSino();
+            if (token) {
+                // 1. Guarda o token na base de dados do utilizador
+                await setDoc(doc(db, 'Utilizadores', currentUser.uid, 'tokens', token), { 
+                    token: token, 
+                    updatedAt: serverTimestamp() 
+                }, { merge: true });
 
-      const isOptional = (userRole === 'administracao' || userRole === 'medico' || userRole === 'recepcao');
-      const modal = document.getElementById("modal-notificacoes");
-      const btnAtiv = document.getElementById("btn-ativar-notif");
-      const btnMais = document.getElementById("btn-mais-tarde");
-      const title = document.getElementById("notif-title");
-      const desc = document.getElementById("notif-desc");
+                // 2. SUBSCREVE AO TÓPICO NO RENDER (Passo Crítico)
+                console.log("Subscrevendo ao tópico 'todos'...");
+                await fetch(`${API_BASE}/subscribe`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token, topic: 'todos' })
+                });
+                console.log("Subscrição concluída com sucesso.");
+            }
+        }
+    } catch(e) {
+        console.error("Erro ao configurar notificações:", e);
+    }
+}
 
-      if (Notification.permission === "default") {
-          if (isOptional) {
-              if (!localStorage.getItem('notif_never_ask')) {
-                  title.innerHTML = `<span class="material-symbols-rounded">notifications</span> Ativar Alertas`;
-                  desc.innerText = "Para seres avisado(a) sempre que houver um novo aviso, podes ativar as notificações.";
-                  btnMais.style.display = "block"; btnMais.innerText = "Não voltar a perguntar"; 
-                  modal.classList.remove("hidden");
-              }
-          } else {
-              if (!sessionStorage.getItem('notif_session_dismissed')) {
-                  title.innerHTML = `<span class="material-symbols-rounded">warning</span> Alertas Importantes`;
-                  desc.innerHTML = "Para o teu perfil técnico, as notificações são fundamentais para garantir a comunicação de escalas e trocas.";
-                  btnMais.style.display = "block"; btnMais.innerText = "Lembrar mais tarde"; 
-                  modal.classList.remove("hidden");
-              }
-          }
-      } else if (Notification.permission === "denied" && !isOptional) {
-          title.innerHTML = `<span class="material-symbols-rounded" style="color:#e74c3c;">error</span> Alertas Bloqueados`;
-          desc.innerHTML = "As notificações são obrigatórias para o teu perfil. <br><br><b>Como resolver:</b> Toque no cadeado (🔒) na barra de endereço lá em cima, vá a 'Permissões', permita as Notificações e clique no botão abaixo.";
-          btnAtiv.innerHTML = `<span class="material-symbols-rounded" style="font-size: 18px;">refresh</span> Já Desbloqueei`;
-          btnMais.style.display = "none"; modal.classList.remove("hidden");
-      } else if (Notification.permission === "granted") {
-          pedirNotificacoes();
-      }
-  }
+function gerirAvisoNotificacoes() {
+    if (!('Notification' in window)) return;
+    atualizarIconeSino();
+
+    const isOptional = (userRole === 'administracao' || userRole === 'medico' || userRole === 'recepcao');
+    const modal = document.getElementById("modal-notificacoes");
+    const btnAtiv = document.getElementById("btn-ativar-notif");
+    const btnMais = document.getElementById("btn-mais-tarde");
+    const title = document.getElementById("notif-title");
+    const desc = document.getElementById("notif-desc");
+
+    if (Notification.permission === "default") {
+        if (isOptional) {
+            if (!localStorage.getItem('notif_never_ask')) {
+                title.innerHTML = `<span class="material-symbols-rounded">notifications</span> Ativar Alertas`;
+                desc.innerText = "Para seres avisado(a) sempre que houver um novo aviso, podes ativar as notificações.";
+                btnMais.style.display = "block"; 
+                btnMais.innerText = "Não voltar a perguntar"; 
+                modal.classList.remove("hidden");
+            }
+        } else {
+            if (!sessionStorage.getItem('notif_session_dismissed')) {
+                title.innerHTML = `<span class="material-symbols-rounded">warning</span> Alertas Importantes`;
+                desc.innerHTML = "Para o teu perfil técnico, as notificações são fundamentais para garantir a comunicação de escalas e trocas.";
+                btnMais.style.display = "block"; 
+                btnMais.innerText = "Lembrar mais tarde"; 
+                modal.classList.remove("hidden");
+            }
+        }
+    } else if (Notification.permission === "denied" && !isOptional) {
+        title.innerHTML = `<span class="material-symbols-rounded" style="color:#e74c3c;">error</span> Alertas Bloqueados`;
+        desc.innerHTML = "As notificações são obrigatórias para o teu perfil. <br><br><b>Como resolver:</b> Toque no cadeado (🔒) na barra de endereço, vá a 'Permissões', permita as Notificações e clique no botão abaixo.";
+        btnAtiv.innerHTML = `<span class="material-symbols-rounded" style="font-size: 18px;">refresh</span> Já Desbloqueei`;
+        btnMais.style.display = "none"; 
+        modal.classList.remove("hidden");
+    } else if (Notification.permission === "granted") {
+        pedirNotificacoes();
+    }
+}
 
   document.getElementById("btn-ativar-notif").onclick = async () => {
       if (Notification.permission === "denied") window.location.reload(); 
