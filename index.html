@@ -340,10 +340,14 @@
 </script>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-  import { getFirestore, doc, onSnapshot, collection, query, where, orderBy, getDoc, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-  import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { 
+    getFirestore, doc, onSnapshot, collection, query, where, orderBy, 
+    getDoc, getDocs, addDoc, updateDoc, deleteDoc, serverTimestamp, setDoc,
+    or // <--- ADICIONADO AQUI
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDnQ5fQFmx1-48lJwcaJhSKq2Y8MAaNAcY",
@@ -656,45 +660,55 @@ function gerirAvisoNotificacoes() {
       }
   };
 
-  function carregarMeusPedidos() {
-    const q = query(collection(db, "Pedidos"), where("createdAt", ">=", limiteData), orderBy("createdAt", "desc"));
+ function carregarMeusPedidos() {
+    const div = document.getElementById("meus-pedidos");
+    if (!div) return;
+
+    // CONSULTA INTELIGENTE: Procura onde o user é autor (email) OU destinatário (colega_email)
+    const q = query(
+        collection(db, "Pedidos"), 
+        or(
+            where("email", "==", currentUser.email),
+            where("colega_email", "==", currentUser.email)
+        ),
+        orderBy("createdAt", "desc")
+    );
+
     onSnapshot(q, snap => {
-        const div = document.getElementById("meus-pedidos");
         div.innerHTML = "";
-        let temPedidos = false;
+        if (snap.empty) {
+            div.innerHTML = "<div class='empty-state'><span class='material-symbols-rounded'>inbox</span>Nenhum pedido encontrado.</div>";
+            return;
+        }
 
         snap.forEach(d => {
             const p = d.data();
-            if (p.email === currentUser.email || p.colega_email === currentUser.email) {
-                temPedidos = true;
-                const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Recente";
-                const souEuOAutor = p.email === currentUser.email;
+            const dataStr = p.createdAt ? new Date(p.createdAt.seconds * 1000).toLocaleDateString("pt-PT") : "Recente";
+            const souEuOAutor = p.email === currentUser.email;
 
-                div.innerHTML += `
-                    <div class="card card-${p.status}">
-                        <div class="pedido-header">
-                            <span class="material-symbols-rounded">person</span> 
-                            ${souEuOAutor ? `Para: ${p.colega_nome}` : `De: ${p.nome}`}
-                        </div>
-                        <div class="pedido-corpo">
-                            <span class="material-symbols-rounded">update</span> 
-                            <strong>${p.meuTurno}</strong> 
-                            <span class="material-symbols-rounded" style="color:var(--text-muted); font-size:14px;">arrow_forward</span> 
-                            <strong>${p.turnoPretendido}</strong>
-                        </div>
-                        <div class="pedido-footer">
-                            <span style="display:flex; align-items:center; gap:4px;">
-                                <span class="material-symbols-rounded" style="font-size:14px;">calendar_today</span> ${dataStr}
-                            </span>
-                            <span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span>
-                        </div>
-                    </div>`;
-            }
+            div.innerHTML += `
+                <div class="card card-${p.status}">
+                    <div class="pedido-header">
+                        <span class="material-symbols-rounded">person</span> 
+                        ${souEuOAutor ? `Para: ${p.colega_nome}` : `De: ${p.nome}`}
+                    </div>
+                    <div class="pedido-corpo">
+                        <span class="material-symbols-rounded">update</span> 
+                        <strong>${p.meuTurno}</strong> 
+                        <span class="material-symbols-rounded" style="color:var(--text-muted); font-size:14px;">arrow_forward</span> 
+                        <strong>${p.turnoPretendido}</strong>
+                    </div>
+                    <div class="pedido-footer">
+                        <span style="display:flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-rounded" style="font-size:14px;">calendar_today</span> ${dataStr}
+                        </span>
+                        <span class="status-badge status-${p.status}">${p.status.toUpperCase()}</span>
+                    </div>
+                </div>`;
         });
-
-        if (!temPedidos) {
-            div.innerHTML = "<div class='empty-state'><span class='material-symbols-rounded'>inbox</span>Nenhum pedido encontrado.</div>";
-        }
+    }, (error) => {
+        console.error("Erro ao carregar pedidos:", error);
+        // Se der erro de índice, ele aparecerá aqui na consola (F12)
     });
   }
 
