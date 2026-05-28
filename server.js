@@ -102,3 +102,27 @@ app.post('/aviso', async (req, res) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Porta: ${PORT}`));
+
+// ROTA 4: ATUALIZAÇÕES DE OCORRÊNCIAS
+app.post('/ocorrencia', async (req, res) => {
+  if (!db) return res.status(500).send("Firebase Offline");
+  try {
+    const { uid_destino, modalidade, estado } = req.body;
+    
+    // Busca os tokens do utilizador alvo
+    const tokensSnap = await db.collection('Utilizadores').doc(uid_destino).collection('tokens').get();
+    const tokens = [];
+    tokensSnap.forEach(t => tokens.push(t.data().token));
+
+    if (tokens.length > 0) {
+      await admin.messaging().sendEachForMulticast({
+        notification: { 
+          title: `Ocorrência ${modalidade}`, 
+          body: `O estado da tua ocorrência mudou para: ${estado}.` 
+        },
+        tokens: tokens
+      });
+    }
+    res.send('Notificação de ocorrência enviada');
+  } catch (err) { res.status(500).send(err.message); }
+});
