@@ -1025,7 +1025,12 @@ function gerirAvisoNotificacoes() {
             uid: currentUser.uid, nome: currentUser.email.split("@")[0], email: currentUser.email, meuTurno: meuTurnoFinal, turnoPretendido: turnoPretendidoFinal, colega_email: colega.value, colega_nome: colega.options[colega.selectedIndex].dataset.nome, descricao: obs, status: "pendente", role: userRole, createdAt: serverTimestamp() 
           });
           const response = await fetch(`${API_BASE}/pedido`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ nome: currentUser.email.split("@")[0], colega_email: colega.value }) });
-          emailjs.send("service_ypyd6nc", "template_r12r1qi", { from_name: currentUser.email, meu_turno: meuTurnoFinal, pedido_id: docRef.id }).catch(e => {});
+          emailjs.send("service_2224ck8", "template_r12r1qi", { 
+              tipo_acao: "Pedido de Troca",
+              from_name: currentUser.email.split("@")[0], 
+              detalhes: `Turno atual: ${meuTurnoFinal} -> Turno pretendido: ${turnoPretendidoFinal}`,
+              pedido_id: docRef.id 
+          }).catch(e => console.error("Erro no email (Trocas):", e));
 
           msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Pedido enviado e notificado!</span>";
           btn.disabled = false; btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Enviar Pedido";
@@ -1096,7 +1101,7 @@ function gerirAvisoNotificacoes() {
 
           btn.innerHTML = "<span class='material-symbols-rounded'>hourglass_empty</span> A registar base de dados...";
 
-          await addDoc(collection(db, "Ocorrencias"), {
+          const docRefOc = await addDoc(collection(db, "Ocorrencias"), {
               uid: currentUser.uid,
               nome_submissor: currentUser.email.split("@")[0],
               cargo_submissor: userRole || "N/A",
@@ -1116,6 +1121,32 @@ function gerirAvisoNotificacoes() {
               fotos: fotosGuardadas,
               createdAt: serverTimestamp()
           });
+
+          // 2. Envio genérico do EmailJS para Ocorrências
+          emailjs.send("service_2224ck8", "template_r12r1qi", { 
+              tipo_acao: "Ocorrência Técnica/Clínica",
+              from_name: currentUser.email.split("@")[0], 
+              detalhes: `Modalidade: ${modalidade}\nTipo: ${tipo}\nEncaminhado para: ${encaminhamento}\n\nDescrição: ${descricao}`,
+              pedido_id: docRefOc.id 
+          }).catch(e => console.error("Erro no email (Ocorrências):", e));
+
+          msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Ocorrência registada com sucesso!</span>";
+          btn.disabled = false;
+          btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Submeter Ocorrência";
+
+          // Limpar o formulário após 2 segundos
+          setTimeout(() => {
+              document.querySelectorAll("#tab-ocorrencias input, #tab-ocorrencias textarea, #tab-ocorrencias select").forEach(el => el.value = "");
+              msg.innerHTML = "";
+          }, 2000);
+
+      } catch(e) {
+          console.error("Erro ao guardar ocorrência:", e);
+          alert("Erro ao enviar: " + e.message);
+          btn.disabled = false;
+          btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Submeter Ocorrência";
+      }
+};
 
           msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Ocorrência registada com sucesso!</span>";
           btn.disabled = false;
