@@ -1148,22 +1148,6 @@ function gerirAvisoNotificacoes() {
       }
 };
 
-          msg.innerHTML = "<span class='material-symbols-rounded' style='color:var(--primary);'>check_circle</span> <span style='color:var(--primary); font-weight:bold;'>Ocorrência registada com sucesso!</span>";
-          btn.disabled = false;
-          btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Submeter Ocorrência";
-
-          setTimeout(() => {
-              document.querySelectorAll("#tab-ocorrencias input, #tab-ocorrencias textarea, #tab-ocorrencias select").forEach(el => el.value = "");
-              msg.innerHTML = "";
-          }, 2000);
-
-      } catch(e) {
-          console.error("Erro ao guardar ocorrência:", e);
-          alert("Erro ao enviar: " + e.message);
-          btn.disabled = false;
-          btn.innerHTML = "<span class='material-symbols-rounded' style='font-size: 18px;'>send</span> Submeter Ocorrência";
-      }
-  };
 
   function carregarAvisos() {
     const q = query(collection(db, "Avisos"), where("createdAt", ">=", limiteData), orderBy("createdAt", "desc"));
